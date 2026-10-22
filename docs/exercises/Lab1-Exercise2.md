@@ -1,4 +1,3 @@
-
 # Exercise 2 — Requirements Analysis with AI
 
 ## 1. Analysis of the Clarification Questions

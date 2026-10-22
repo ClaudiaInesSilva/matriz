@@ -1,4 +1,4 @@
-## Exercise 1
+# Exercise 1
 ### Part A: Analysis of the Initial Prompt
 
 Prompt: "Quero criar uma aplicação de gestão de projetos e tarefas chamada Matriz. Ajuda-me a desenvolver a aplicação."

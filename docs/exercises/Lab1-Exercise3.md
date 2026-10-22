@@ -1,4 +1,3 @@
-
 # Exercise 3 — User Stories and Acceptance Criteria
 
 ## 1. Introduction

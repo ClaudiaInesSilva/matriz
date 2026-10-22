@@ -1,26 +1,58 @@
 
 # Matriz
 
-## Overview
-Matriz is a proposed application for managing projects and tasks within teams.
+Matriz is a project and task management application intended for work teams within a company.
 
-## Problem
-Teams need a way to organise projects, manage tasks and track work progress.
+## Problem Statement
 
-## Objectives
-- Organise projects.
-- Manage tasks.
-- Track the progress of work.
+The client brief confirms one need: teams need an application to organise projects, manage tasks and follow work progress. It does not define detailed functionalities, business rules, technical requirements or development priorities.
 
-## Planned MVP
-To be defined during requirements analysis.
+Matriz aims to provide a structured way to manage project work and make task progress visible.
 
-## Documentation
-- `docs/requirements.md` — requirements and MVP scope.
-- `docs/user-stories.md` — user stories and acceptance criteria.
-- `docs/constraints.md` — constraints, assumptions and pending decisions.
+## Main Objectives
 
-## Project Status
-Initial setup and requirements specification.
+- Organise work into projects.
+- Create and manage tasks associated with projects.
+- Track task status.
+- Support the client's stated need to follow work progress. How progress is represented remains undecided.
+- Establish a clear, documented foundation for future development.
 
-No application code has been implemented yet.
+## Proposed MVP Features
+
+The proposed MVP for requirements validation is limited to:
+
+- Creating and viewing projects.
+- Creating, viewing and editing tasks.
+- Associating tasks with projects.
+- Updating task status.
+- Viewing task statuses within their projects. This is the current proposed interpretation of progress tracking; no aggregate or numerical completion percentage is required by the brief.
+
+Task assignment is a candidate feature, outside the core proposed MVP until the client validates it. Notifications, advanced reporting, external integrations, workflow automation and custom dashboards are scope proposals for consideration, not confirmed client exclusions.
+
+All detailed features in this MVP are proposed interpretations, not confirmed client requirements. The MVP is a clear working baseline for the next course phase and remains subject to client validation.
+
+## Documentation Structure
+
+The `docs/` directory contains the main project documentation.
+
+| File | Purpose |
+|---|---|
+| `docs/requirements.md` | Application vision, user types, functional and non-functional requirements, MVP scope and open questions. |
+| `docs/user-stories.md` | Initial user stories, priorities, acceptance criteria and exceptional cases. |
+| `docs/constraints.md` | Known constraints, assumptions, security and privacy considerations, pending technical decisions and scope limitations. |
+
+## Current Project Status
+
+**Phase:** Requirements analysis and context preparation.
+
+The initial requirements proposal, at least five user stories, acceptance criteria, assumptions, constraints and a critical review of AI-generated recommendations have been documented. Technical architecture and implementation have not yet been defined; no code is expected in the initial lab phase.
+
+The next step is to validate open business questions and the proposed scope against any further client guidance, then follow the course guidance for the next development phase.
+
+## Working Principles
+
+- Consult the documentation before proposing or implementing changes.
+- Distinguish confirmed requirements from assumptions.
+- Do not add unapproved features or make unapproved technical decisions.
+- Keep development aligned with the proposed MVP baseline until it is validated; do not imply client approval.
+- Review and update the documentation when requirements or decisions change.
