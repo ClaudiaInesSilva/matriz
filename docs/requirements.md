@@ -53,7 +53,7 @@ The following requirements define the proposed functional scope.
 | FR02 | The application shall display projects available to the user. | Essential | Proposed |
 | FR03 | The application shall allow authorised users to create, view and edit tasks. | Essential | Proposed |
 | FR04 | Each task shall be associated with a project. | Essential | Proposed |
-| FR05 | The application shall allow authorised users to update task status. | Essential | Proposed |
+| FR05 | The application shall assign an initial status when creating a task and allow authorised users to update its status. | Essential | Proposed; initial-status behavior and value pending client validation |
 | FR06 | The application shall display task statuses within their respective projects. | Essential | Proposed |
 | FR07 | The application shall let users follow work progress by viewing the statuses of tasks in a project. This proposal does not require a calculated or numerical completion value. | Essential | Proposed |
 | FR08 | The application may allow tasks to be assigned to team members. | Medium | Candidate feature; pending client validation |
@@ -64,6 +64,7 @@ The following requirements define the proposed functional scope.
 
 - Project creation must reject missing required information.
 - Task creation must reject missing required information.
+- The application is proposed to assign an initial status when a task is created; an authorised user may change it later. The initial value and allowed status values remain subject to client validation.
 - Tasks must belong to a valid project.
 - Task status updates must use valid statuses.
 - A project without tasks must indicate that there are no task statuses to display; it must not show a fabricated progress value.
@@ -96,6 +97,7 @@ The proposed Minimum Viable Product (MVP) will focus on the smallest useful set 
 - Create, view and edit tasks.
 - Associate tasks with projects.
 - Update task status.
+- Assign an initial status to each newly created task, then allow authorised users to change it. The initial value and status vocabulary remain undecided.
 - View task status within each project.
 - Follow work progress by viewing task statuses within a project. No percentage or aggregate calculation is included in this baseline.
 
@@ -121,6 +123,7 @@ The following questions should be clarified before the requirements are consider
 - What information must a project contain?
 - What information must a task contain?
 - Which task statuses should be available?
+- Should the application assign an initial task status at creation? The proposed behavior is that it does; the initial value and status vocabulary remain undecided.
 - Can users create projects, or is this restricted to project managers?
 - Should tasks be assigned to specific team members?
 - Must task assignment be mandatory or optional?

@@ -5,9 +5,10 @@ info:
   description: >-
     Proposed API contract for three Matriz MVP operations. Detailed requirements
     remain subject to client validation. Task assignment is not included.
-    The task status property has no enumerated values or API default. Requiring
-    a status in the task creation request is a provisional API assumption that
-    requires client validation. This limited contract does not define the
+    The task status property has no enumerated values or API default. The
+    application is proposed to assign an initial status when a task is created;
+    the value and status vocabulary remain subject to client validation. This
+    limited contract does not define the
     separately required task-status update operation or a project progress
     summary. Identifier values are represented as strings in this API proposal;
     their underlying representation remains undecided.
@@ -74,9 +75,10 @@ paths:
       summary: Create a task in a project
       description: >-
         Creates a task associated with the identified project. The project
-        association is taken from the path. The client must validate whether a
-        caller may supply the initial status; this proposal requires a status
-        value but defines neither its allowed values nor a default.
+        association is taken from the path. The application is proposed to
+        assign an initial status; the initial value and permitted status values
+        remain subject to client validation. The caller does not supply status
+        in this request.
       parameters:
         - name: projectId
           in: path
@@ -152,21 +154,16 @@ components:
     CreateTaskRequest:
       type: object
       description: >-
-        Task fields for creation. Requiring status here is a provisional API
-        assumption; whether status is supplied during creation or assigned by
-        a client-approved rule remains open. No allowed values or default are
-        defined.
+        Task fields supplied for creation. The application is proposed to
+        assign an initial status. The initial status value and permitted status
+        values remain subject to client validation.
       required:
         - title
-        - status
       properties:
         title:
           type: string
           minLength: 1
           description: Task title; the user stories assume a non-empty title.
-        status:
-          type: string
-          description: Current status value. Allowed values and creation rules are pending client validation.
 
     Task:
       type: object
@@ -188,7 +185,10 @@ components:
           description: Task title.
         status:
           type: string
-          description: Current task status; no status values or transition rules are specified.
+          description: >-
+            Current task status. The application is proposed to assign its
+            initial value at creation; an authorised user may later change it.
+            No initial value, status vocabulary, or transition rules are specified.
 
     Error:
       type: object

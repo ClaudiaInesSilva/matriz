@@ -40,12 +40,16 @@ The `docs/` directory contains the main project documentation.
 | `docs/requirements.md` | Application vision, user types, functional and non-functional requirements, MVP scope and open questions. |
 | `docs/user-stories.md` | Initial user stories, priorities, acceptance criteria and exceptional cases. |
 | `docs/constraints.md` | Known constraints, assumptions, security and privacy considerations, pending technical decisions and scope limitations. |
+| `docs/architecture.md` | Proposed modular monolith architecture for the MVP and its components. |
+| `docs/database.md` | Technology-independent conceptual data model, relationships and open questions. |
+| `openapi.yaml` | Simplified proposed API contract for selected MVP operations. |
+| `docs/ui/dashboard-wireframe.html` | Low-fidelity HTML dashboard wireframe; illustrative, not an implemented application. |
 
 ## Current Project Status
 
 **Phase:** Requirements analysis and context preparation.
 
-The initial requirements proposal, at least five user stories, acceptance criteria, assumptions, constraints and a critical review of AI-generated recommendations have been documented. Technical architecture and implementation have not yet been defined; no code is expected in the initial lab phase.
+The initial requirements proposal, user stories, acceptance criteria, assumptions, constraints and critical reviews have been documented. A modular monolith is proposed for the MVP; implementation technologies and detailed technical architecture remain undecided. Supporting artefacts include a conceptual data model, a simplified API contract and an illustrative HTML wireframe. No application implementation is included.
 
 The next step is to validate open business questions and the proposed scope against any further client guidance, then follow the course guidance for the next development phase.
 

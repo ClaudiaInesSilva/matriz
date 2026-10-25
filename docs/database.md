@@ -34,7 +34,7 @@ Represents a task associated with a project.
 | `task_id` | Primary key (PK) | Identifier for the task. |
 | `project_id` | Foreign key (FK) | References `Project.project_id`; every task is associated with one valid project under the proposed requirement FR04. |
 | `title` | — | Task title. US03 assumes a title and rejects an empty one; other task fields and final requiredness remain to be validated. |
-| `status` | — | The task's current status, used for status updates and project status viewing. The allowed values and transition rules are undecided. |
+| `status` | — | The task's current status, used for status updates and project status viewing. The application is proposed to assign an initial status at task creation, which an authorised user may later change. The initial value, allowed values and transition rules are undecided. |
 | `assignee_id` | Conditional FK | If assignment is approved, references `TeamMember.member_id`. The field is optional in this proposal because mandatory assignment is unresolved. |
 
 ### TeamMember — conditional entity for task assignment
@@ -58,7 +58,7 @@ No separate status, progress, role, permission, account, or project-membership e
 
 - A task refers to one project. A task must not refer to a missing project; this supports FR04 and exceptional case EC05.
 - A project may have no tasks. In that case, its task list is empty and no progress value is fabricated.
-- A task stores its current status so it can be updated and displayed within its project. The model does not prescribe status names, a workflow, or transition restrictions.
+- A task stores its current status so it can be updated and displayed within its project. The application is proposed to assign an initial status when creating a task; authorised users may change it later. This behavior and the initial value remain pending client validation. The model does not prescribe status names, a workflow, or transition restrictions.
 - Progress Tracking reads tasks and their statuses from Task Management. The stored task records and statuses provide the data needed for a progress calculation, if the client requires one. The calculation is derived rather than stored as a separate entity; whether it uses a completed-task count, percentage, or another rule remains undecided.
 - If assignment is approved, a task may reference an assignee. The conditional relationship does not define who is eligible or how eligibility is determined.
 - Shared validation and access protection are responsibilities in the architecture proposal, not additional data entities here. Access rules and permissions are not defined by this model.
@@ -103,6 +103,7 @@ erDiagram
 
 - What fields must projects and tasks contain, and which are required? The model includes only the assumed project name and task title beyond identifiers and required relationships/status.
 - Which task status values are valid? Are there restrictions on transitions between statuses?
+- Should the application assign an initial status at task creation? This is the current proposal; which initial value should be used?
 - Is task assignment part of the MVP? Is it optional or mandatory, can a task have multiple assignees, and what makes a team member eligible?
 - What information identifies a team member, and where does that identity come from if assignment is approved? Authentication and account management remain undecided.
 - How should project progress be presented and calculated from task data? Should users see statuses only, a count of completed tasks, a percentage, or another representation? No formula or status-to-progress rule is assumed.

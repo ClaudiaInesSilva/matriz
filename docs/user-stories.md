@@ -72,6 +72,8 @@ As a team member, I want to create and edit tasks within a project, so that I ca
 
 **Assumption:** A task must have a title and belong to a project. Additional required fields must be defined.
 
+**Proposed behavior, pending client validation:** The application assigns an initial status when creating a task. An authorised user may later change the status. The initial value and permitted status values remain undecided.
+
 ### US04 — Update Task Status
 
 **Priority:** High

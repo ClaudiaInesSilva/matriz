@@ -25,7 +25,7 @@ The following assumptions are provisional and must not be treated as confirmed c
 |---|---|---|---|
 | A01 | Projects group tasks related to a common objective. | Provides a basic model for project organisation. | Provisional |
 | A02 | Tasks have a title and belong to a project. | Supports basic task management. | Provisional |
-| A03 | Tasks have a status. | Supports progress tracking. | Provisional |
+| A03 | Each task has a current status; the application is proposed to assign an initial status at creation, which an authorised user can later change. | Supports status viewing and updates for progress tracking. | Provisional; initial value and permitted status values pending client validation |
 | A04 | Team members and project managers are useful initial user types. | Reflects common responsibilities in team-based project management. | Provisional |
 | A05 | Task assignment may be useful in the MVP. | Could clarify responsibility for work. | Pending client validation |
 | A06 | Viewing task statuses may be a sufficient initial way to follow project progress. | A simple interpretation of the brief for the proposed MVP. | Proposed; validate with client; no numerical percentage assumed |
