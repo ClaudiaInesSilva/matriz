@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Matriz — Dashboard Wireframe</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #252525;
+      --muted: #666;
+      --line: #b8b8b8;
+      --soft-line: #d8d8d8;
+      --paper: #fff;
+      --panel: #f2f2f2;
+      --selected: #e5e5e5;
+      --dark: #333;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #e9e9e9;
+      font: 15px/1.45 Arial, Helvetica, sans-serif;
+    }
+
+    button { font: inherit; }
+
+    .app-shell {
+      width: min(1240px, calc(100% - 40px));
+      min-height: 760px;
+      margin: 28px auto;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: 0 2px 10px #00000012;
+    }
+
+    .topbar {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--dark);
+      border: 1px solid var(--dark);
+      font-size: 16px;
+    }
+
+    .prototype-label {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .workspace {
+      min-height: 690px;
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      padding: 22px 16px;
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+    }
+
+    .nav-label, .section-label {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    .nav-item {
+      display: block;
+      padding: 9px 10px;
+      border: 1px solid var(--dark);
+      background: var(--paper);
+      font-weight: 700;
+    }
+
+    .project-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 28px 0 10px;
+    }
+
+    .project-heading .section-label { margin: 0; }
+
+    .project-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .project-item {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      color: var(--ink);
+      text-align: left;
+      background: transparent;
+      border: 1px solid transparent;
+    }
+
+    .project-item[aria-current="page"] {
+      background: var(--selected);
+      border-color: var(--line);
+      font-weight: 700;
+    }
+
+    .project-item small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 400;
+    }
+
+    .main-content { min-width: 0; padding: 26px 30px 34px; }
+
+    .breadcrumb {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .breadcrumb span { color: var(--ink); font-weight: 700; }
+
+    .placeholder-note {
+      margin: 0 0 22px;
+      padding: 10px 12px;
+      color: #444;
+      background: #f7f7f7;
+      border: 1px dashed var(--line);
+      font-size: 12px;
+    }
+
+    .project-title-row, .tasks-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    h1, h2, p { margin-top: 0; }
+
+    h1 { margin-bottom: 4px; font-size: 26px; }
+    h2 { margin-bottom: 0; font-size: 19px; }
+
+    .subtitle { margin-bottom: 0; color: var(--muted); font-size: 13px; }
+
+    .button {
+      min-height: 38px;
+      padding: 8px 13px;
+      color: var(--ink);
+      background: var(--paper);
+      border: 1px solid var(--dark);
+      cursor: default;
+      white-space: nowrap;
+    }
+
+    .button-primary { color: #fff; background: var(--dark); }
+
+    .status-note {
+      margin: 23px 0 26px;
+      padding: 13px 15px;
+      border: 1px solid var(--soft-line);
+      background: #fafafa;
+      color: #444;
+      font-size: 13px;
+    }
+
+    .status-note strong { color: var(--ink); }
+
+    .task-list {
+      margin-top: 15px;
+      border: 1px solid var(--line);
+    }
+
+    .task-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px 96px;
+      align-items: center;
+      gap: 18px;
+      min-height: 62px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--soft-line);
+    }
+
+    .task-row:last-child { border-bottom: 0; }
+
+    .task-heading {
+      padding-top: 10px;
+      padding-bottom: 10px;
+      background: var(--panel);
+      color: #444;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .status-placeholder {
+      display: inline-block;
+      width: fit-content;
+      padding: 4px 8px;
+      color: #444;
+      background: #f0f0f0;
+      border: 1px dashed #888;
+      font-size: 12px;
+    }
+
+    .wireframe-footer {
+      margin: 20px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 760px) {
+      .app-shell { width: 100%; min-height: 100vh; margin: 0; border: 0; }
+      .workspace { grid-template-columns: 1fr; }
+      .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
+      .project-heading { margin-top: 18px; }
+      .project-list { grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); }
+      .main-content { padding: 22px 18px 30px; }
+      .task-row { grid-template-columns: minmax(0, 1fr) 175px 84px; }
+    }
+
+    @media (max-width: 480px) {
+      .prototype-label { max-width: 180px; }
+      .project-title-row, .tasks-title-row { align-items: flex-start; flex-direction: column; }
+      .task-row { grid-template-columns: 1fr; gap: 8px; }
+      .task-heading { display: none; }
+      .task-row:not(.task-heading) .status-placeholder::before {
+        content: "Status: ";
+        font-weight: 700;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand" aria-label="Matriz">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>Matriz</span>
+      </div>
+      <div class="prototype-label">Low-fidelity wireframe<br>Static layout · proposed MVP</div>
+    </header>
+
+    <div class="workspace">
+      <aside class="sidebar" aria-label="Project navigation">
+        <p class="nav-label">Navigation</p>
+        <div class="nav-item" aria-current="page">Projects</div>
+
+        <div class="project-heading">
+          <p class="section-label">Projects</p>
+          <button class="button" type="button">+ New project</button>
+        </div>
+
+        <ul class="project-list" aria-label="Illustrative project list">
+          <li>
+            <div class="project-item" aria-current="page">
+              Example project 01
+              <small>Illustrative placeholder</small>
+            </div>
+          </li>
+          <li>
+            <div class="project-item">
+              Example project 02
+              <small>Illustrative placeholder</small>
+            </div>
+          </li>
+          <li>
+            <div class="project-item">
+              Example project 03
+              <small>Illustrative placeholder</small>
+            </div>
+          </li>
+        </ul>
+      </aside>
+
+      <main class="main-content">
+        <p class="breadcrumb">Projects <span aria-hidden="true">/</span> <span>Example project 01</span></p>
+
+        <p class="placeholder-note">
+          Illustrative placeholder content only. These project and task examples are not actual Matriz data.
+        </p>
+
+        <section aria-labelledby="project-title">
+          <div class="project-title-row">
+            <div>
+              <h1 id="project-title">Example project 01</h1>
+              <p class="subtitle">Selected project · illustrative placeholder</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="status-note" aria-label="Progress and status note">
+          <strong>Following project progress:</strong>
+          task statuses are shown below. The status vocabulary and any summary calculation have not been defined.
+        </section>
+
+        <section aria-labelledby="tasks-title">
+          <div class="tasks-title-row">
+            <div>
+              <h2 id="tasks-title">Tasks</h2>
+              <p class="subtitle">Tasks associated with this project</p>
+            </div>
+            <button class="button button-primary" type="button">+ New task</button>
+          </div>
+
+          <div class="task-list" role="table" aria-label="Illustrative tasks and current status placeholders">
+            <div class="task-row task-heading" role="row">
+              <div role="columnheader">Task</div>
+              <div role="columnheader">Current status</div>
+              <div role="columnheader">Action</div>
+            </div>
+            <div class="task-row" role="row">
+              <div role="cell">Example task 01</div>
+              <div role="cell"><span class="status-placeholder">Status value not defined</span></div>
+              <div role="cell"><button class="button" type="button">Edit task</button></div>
+            </div>
+            <div class="task-row" role="row">
+              <div role="cell">Example task 02</div>
+              <div role="cell"><span class="status-placeholder">Status value not defined</span></div>
+              <div role="cell"><button class="button" type="button">Edit task</button></div>
+            </div>
+            <div class="task-row" role="row">
+              <div role="cell">Example task 03</div>
+              <div role="cell"><span class="status-placeholder">Status value not defined</span></div>
+              <div role="cell"><button class="button" type="button">Edit task</button></div>
+            </div>
+          </div>
+        </section>
+
+        <p class="wireframe-footer">Status labels are placeholders. No completion count, percentage, or other progress formula is shown.</p>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
