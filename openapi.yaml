@@ -1,49 +1,129 @@
+
 openapi: 3.1.0
+
 info:
-  title: Matriz MVP API
-  version: 0.1.0
-  description: >-
-    Proposed API contract for three Matriz MVP operations. Detailed requirements
-    remain subject to client validation. Task assignment is not included.
-    The task status property has no enumerated values or API default. The
-    application is proposed to assign an initial status when a task is created;
-    the value and status vocabulary remain subject to client validation. This
-    limited contract does not define the
-    separately required task-status update operation or a project progress
-    summary. Identifier values are represented as strings in this API proposal;
-    their underlying representation remains undecided.
+  title: Matriz API
+  version: 1.0.0
+  description: |
+    Proposed REST API contract for the Matriz application.
+
+    This contract covers the minimum functional scope required by Lab 03.
+    The original client brief only confirmed the high-level need to organise
+    projects, manage tasks and follow work progress. Detailed functionality
+    and business rules in this contract are proposed implementation decisions
+    or course requirements, not additional client-confirmed requirements.
+
+servers:
+  - url: http://localhost:8080/api
+    description: Local development server
+
+tags:
+  - name: Authentication
+  - name: Projects
+  - name: Tasks
+  - name: Assignments
+  - name: Comments
+  - name: Dashboard
+
 paths:
-  /projects:
-    get:
-      operationId: listProjects
-      summary: List projects
-      description: >-
-        Returns projects available to the caller under access rules that remain
-        to be defined. Authentication and the rules for project visibility are
-        not specified by this contract. An empty list is returned when no
-        projects are available.
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Log in
+      description: Authenticates a user and creates a server-side session.
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Project list retrieved successfully.
+          description: Login successful. The server establishes a session cookie.
+          headers:
+            Set-Cookie:
+              description: Session cookie managed by the server.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Log out
+      description: Invalidates the current server-side session.
+      operationId: logout
+      responses:
+        '204':
+          description: Logout successful.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Returns the identity of the currently authenticated user.
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Current authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedUser'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /projects:
+    get:
+      tags:
+        - Projects
+      summary: List projects
+      description: |
+        Returns all projects to any authenticated user. The optional search
+        matches partial project names case-insensitively after trimming
+        leading and trailing query whitespace. An empty or omitted query
+        returns all projects. Project ownership does not restrict viewing.
+      operationId: listProjects
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Optional project-name search term; trim edge whitespace and use case-insensitive partial matching. Empty or omitted returns all projects.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: All projects visible to any authenticated user.
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/Project'
-        '500':
-          description: An unexpected server error occurred.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
     post:
+      tags:
+        - Projects
+      summary: Create project
+      description: Creates a project. Any authenticated user may create one; the backend records the caller as owner. Name is required (3–150 characters); description is optional (maximum 2,000).
       operationId: createProject
-      summary: Create a project
-      description: >-
-        Creates a new project. A non-empty project name is assumed by the
-        current user stories; this proposed API behavior remains subject to
-        client validation.
       requestBody:
         required: true
         content:
@@ -52,40 +132,134 @@ paths:
               $ref: '#/components/schemas/CreateProjectRequest'
       responses:
         '201':
-          description: Project created successfully.
+          description: Project created.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Project'
         '400':
-          description: The request body is malformed or contains invalid project data.
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /projects/{projectId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+
+    get:
+      tags:
+        - Projects
+      summary: Get project
+      description: Any authenticated user may view any project, regardless of ownership.
+      operationId: getProject
+      responses:
+        '200':
+          description: Project details.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: An unexpected server error occurred.
+                $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Projects
+      summary: Update project
+      description: Replaces editable project details. Only the project owner may update it.
+      operationId: updateProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectRequest'
+      responses:
+        '200':
+          description: Project updated.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Projects
+      summary: Delete project
+      description: |
+        Only the project owner may delete a project. A project cannot be
+        deleted while it contains tasks; in that case the response is 409.
+      operationId: deleteProject
+      responses:
+        '204':
+          description: Project deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Project cannot be deleted because it still contains one or more tasks.
+
   /projects/{projectId}/tasks:
-    post:
-      operationId: createProjectTask
-      summary: Create a task in a project
-      description: >-
-        Creates a task associated with the identified project. The project
-        association is taken from the path. The application is proposed to
-        assign an initial status; the initial value and permitted status values
-        remain subject to client validation. The caller does not supply status
-        in this request.
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+
+    get:
+      tags:
+        - Tasks
+      summary: List project tasks
+      description: |
+        Any authenticated user may list tasks in any project. Optional status
+        and priority filters combine with AND behavior. An omitted filter does
+        not restrict results.
+      operationId: listProjectTasks
       parameters:
-        - name: projectId
-          in: path
-          required: true
-          description: Identifier of the existing project for the new task.
+        - name: status
+          in: query
+          required: false
           schema:
-            type: string
+            $ref: '#/components/schemas/TaskStatus'
+        - name: priority
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TaskPriority'
+      responses:
+        '200':
+          description: List of project tasks.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags:
+        - Tasks
+      summary: Create task
+      description: |
+        Any authenticated user may create a task in any existing project.
+        The backend records the creator. Status defaults to TODO and priority
+        defaults to MEDIUM. Title is required (3–150 characters); description
+        is optional (maximum 2,000 characters).
+      operationId: createProjectTask
       requestBody:
         required: true
         content:
@@ -94,101 +268,514 @@ paths:
               $ref: '#/components/schemas/CreateTaskRequest'
       responses:
         '201':
-          description: Task created successfully.
+          description: Task created.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Task'
         '400':
-          description: The request body is malformed or contains invalid task data.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          description: No project exists with the supplied projectId.
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
+
+    get:
+      tags:
+        - Tasks
+      summary: Get task
+      description: Any authenticated user may view a task in any project.
+      operationId: getTask
+      responses:
+        '200':
+          description: Task details.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: An unexpected server error occurred.
+                $ref: '#/components/schemas/Task'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Tasks
+      summary: Update task
+      description: Any authenticated user may update a task in any project, subject to task field validation.
+      operationId: updateTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Task updated.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Tasks
+      summary: Delete task
+      description: Only the project owner or task creator may delete the task. Deletion also removes its task-assignment and comment records.
+      operationId: deleteTask
+      responses:
+        '204':
+          description: Task deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{projectId}/eligible-assignees:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      tags:
+        - Assignments
+      summary: List eligible assignees
+      description: |
+        Returns all existing user accounts. Any existing account may be
+        assigned to a task regardless of project ownership or membership.
+      operationId: listEligibleAssignees
+      responses:
+        '200':
+          description: List of eligible users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}/assignees:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
+
+    get:
+      tags:
+        - Assignments
+      summary: List task assignees
+      operationId: listTaskAssignees
+      responses:
+        '200':
+          description: Users currently assigned to the task.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags:
+        - Assignments
+      summary: Assign user to task
+      description: |
+        Adds an existing user account to the task. Project ownership is not
+        required for assignment eligibility.
+        A user cannot be assigned to the same task more than once.
+        Any authenticated user may add an assignment.
+      operationId: assignUserToTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignUserRequest'
+      responses:
+        '201':
+          description: User assigned successfully.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: User is already assigned to the task.
+
+  /tasks/{taskId}/assignees/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      tags:
+        - Assignments
+      summary: Remove task assignee
+      description: Any authenticated user may remove the specified task/user assignment.
+      operationId: removeTaskAssignee
+      responses:
+        '204':
+          description: Assignment removed.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}/comments:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
+
+    get:
+      tags:
+        - Comments
+      summary: List task comments
+      operationId: listTaskComments
+      responses:
+        '200':
+          description: Comments belonging to the task.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags:
+        - Comments
+      summary: Add task comment
+      description: |
+        Adds a comment to the task. The backend derives the author from
+        the authenticated session; the client cannot supply the author.
+      operationId: addTaskComment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '201':
+          description: Comment created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /dashboard:
+    get:
+      tags:
+        - Dashboard
+      summary: Get dashboard
+      description: |
+        Returns all projects to the authenticated user and counts across all
+        tasks in those projects, grouped for TODO, IN_PROGRESS and DONE.
+        All three statuses are included even when the count is zero. Counts
+        include all priorities and assignees and are derived from task data;
+        no percentage, charts or advanced analytics are included.
+      operationId: getDashboard
+      responses:
+        '200':
+          description: Dashboard data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
 components:
+
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: |
+        Server-managed session cookie established at login.
+        The actual cookie name and CSRF configuration must match
+        the Spring Security implementation.
+
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      schema:
+        type: string
+
   schemas:
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+          format: password
+
+    AuthenticatedUser:
+      type: object
+      required:
+        - userId
+        - username
+        - displayName
+      properties:
+        userId:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+
+    UserSummary:
+      type: object
+      required:
+        - userId
+        - displayName
+      properties:
+        userId:
+          type: string
+        displayName:
+          type: string
+
     CreateProjectRequest:
       type: object
-      description: >-
-        Project fields for creation. A non-empty name is assumed in the user
-        stories and remains subject to client validation.
       required:
         - name
       properties:
         name:
           type: string
-          minLength: 1
-          description: Project name; non-empty as a provisional requirement.
+          minLength: 3
+          maxLength: 150
+        description:
+          type: string
+          maxLength: 2000
+
+    UpdateProjectRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 150
+        description:
+          type: string
+          maxLength: 2000
 
     Project:
       type: object
-      description: >-
-        Project summary. A project name is an assumption in the user stories;
-        this proposal represents it as a required, non-empty field. Client
-        validation is still pending, and other project fields remain undecided.
       required:
         - projectId
         - name
       properties:
         projectId:
           type: string
-          description: Project identifier.
         name:
           type: string
-          minLength: 1
-          description: Project name; required and non-empty in this proposal, pending client validation.
+          minLength: 3
+          maxLength: 150
+        description:
+          type: string
+          maxLength: 2000
+        owner:
+          $ref: '#/components/schemas/UserSummary'
+
+    TaskStatus:
+      type: string
+      enum:
+        - TODO
+        - IN_PROGRESS
+        - DONE
+      default: TODO
+
+    TaskPriority:
+      type: string
+      enum:
+        - LOW
+        - MEDIUM
+        - HIGH
+      default: MEDIUM
 
     CreateTaskRequest:
       type: object
-      description: >-
-        Task fields supplied for creation. The application is proposed to
-        assign an initial status. The initial status value and permitted status
-        values remain subject to client validation.
       required:
         - title
       properties:
         title:
           type: string
-          minLength: 1
-          description: Task title; the user stories assume a non-empty title.
+          minLength: 3
+          maxLength: 150
+        description:
+          type: string
+          maxLength: 2000
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+
+    UpdateTaskRequest:
+      type: object
+      required:
+        - title
+        - status
+        - priority
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 150
+        description:
+          type: string
+          maxLength: 2000
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
 
     Task:
       type: object
-      description: Task created within a project.
       required:
         - taskId
         - projectId
         - title
         - status
+        - priority
       properties:
         taskId:
           type: string
-          description: Task identifier.
         projectId:
           type: string
-          description: Identifier of the project to which this task belongs.
         title:
           type: string
-          description: Task title.
-        status:
+          minLength: 3
+          maxLength: 150
+        description:
           type: string
-          description: >-
-            Current task status. The application is proposed to assign its
-            initial value at creation; an authorised user may later change it.
-            No initial value, status vocabulary, or transition rules are specified.
+          maxLength: 2000
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+        assignees:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSummary'
+
+    AssignUserRequest:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+
+    CreateCommentRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: '[\s\S]*\S[\s\S]*'
+          description: Must contain at least one non-whitespace character.
+
+    Comment:
+      type: object
+      required:
+        - commentId
+        - taskId
+        - author
+        - content
+        - createdAt
+      properties:
+        commentId:
+          type: string
+        taskId:
+          type: string
+        author:
+          $ref: '#/components/schemas/UserSummary'
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: '[\s\S]*\S[\s\S]*'
+          description: Must contain at least one non-whitespace character.
+        createdAt:
+          type: string
+          format: date-time
+
+    Dashboard:
+      type: object
+      required:
+        - projects
+        - taskCounts
+      properties:
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
+        taskCounts:
+          type: object
+          required:
+            - TODO
+            - IN_PROGRESS
+            - DONE
+          properties:
+            TODO:
+              type: integer
+              minimum: 0
+            IN_PROGRESS:
+              type: integer
+              minimum: 0
+            DONE:
+              type: integer
+              minimum: 0
 
     Error:
       type: object
@@ -197,4 +784,35 @@ components:
       properties:
         message:
           type: string
-          description: Human-readable explanation of the request failure.
+
+  responses:
+    BadRequest:
+      description: The request is invalid or fails validation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Authentication is required or the session is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: The authenticated user does not have permission.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: The requested resource was not found or is not accessible.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+security:
+  - sessionCookie: []

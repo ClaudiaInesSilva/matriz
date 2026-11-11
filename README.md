@@ -13,23 +13,38 @@ Matriz aims to provide a structured way to manage project work and make task pro
 
 - Organise work into projects.
 - Create and manage tasks associated with projects.
-- Track task status.
-- Support the client's stated need to follow work progress. How progress is represented remains undecided.
+- Track task status and follow work progress.
 - Establish a clear, documented foundation for future development.
 
-## Proposed MVP Features
+The first three points reflect the client's high-level brief. It does not specify the detailed functionality or rules below.
 
-The proposed MVP for requirements validation is limited to:
+## Lab 03 Implementation Scope
 
-- Creating and viewing projects.
-- Creating, viewing and editing tasks.
-- Associating tasks with projects.
-- Updating task status.
-- Viewing task statuses within their projects. This is the current proposed interpretation of progress tracking; no aggregate or numerical completion percentage is required by the brief.
+The following functionality forms the documented Lab 03 course implementation target. These course requirements and working decisions expand the original brief; they are not additional requirements independently confirmed by the client:
 
-Task assignment is a candidate feature, outside the core proposed MVP until the client validates it. Notifications, advanced reporting, external integrations, workflow automation and custom dashboards are scope proposals for consideration, not confirmed client exclusions.
+- Authentication: log in, log out and retrieve the current authenticated user.
+- Projects: create, list and view all projects; only the owner can edit or delete.
+- Tasks: create, list, view, edit and delete tasks associated with projects.
+- Task status: `TODO`, `IN_PROGRESS` and `DONE`, with `TODO` as the default.
+- Task priority: `LOW`, `MEDIUM` and `HIGH`, with `MEDIUM` as the default.
+- Any authenticated user can assign existing users to a task and remove assignments; project ownership does not affect eligibility.
+- Add and list task comments with author and creation date.
+- Search projects by name and filter tasks by status and priority.
+- Show all projects and task counts grouped by status on the dashboard.
 
-All detailed features in this MVP are proposed interpretations, not confirmed client requirements. The MVP is a clear working baseline for the next course phase and remains subject to client validation.
+Project visibility and ownership, task and assignment permissions, deletion behavior, assignment eligibility, search and filter semantics, dashboard counts, and project validation are recorded as approved working rules for the Lab 03 course implementation. They are not additional requirements independently confirmed by the original client. Account lifecycle details remain open.
+
+## Proposed Architecture and Technology Stack
+
+The proposed architecture is a Modular Monolith: a single backend deployment organized into modules, with a separate frontend communicating through a REST API. The current working technology proposal is:
+
+- Backend: Java, Spring Boot and Maven.
+- Frontend: React with TypeScript, using Vite and npm.
+- Database and persistence: PostgreSQL and Spring Data JPA.
+- Security: Spring Security with server-side session-based authentication.
+- Backend testing: JUnit 5 and Spring Boot Test.
+
+These are project working decisions for Lab 03, not client-confirmed technical requirements. Specific versions, configuration and deployment details remain to be established.
 
 ## Documentation Structure
 
@@ -40,23 +55,24 @@ The `docs/` directory contains the main project documentation.
 | `docs/requirements.md` | Application vision, user types, functional and non-functional requirements, MVP scope and open questions. |
 | `docs/user-stories.md` | Initial user stories, priorities, acceptance criteria and exceptional cases. |
 | `docs/constraints.md` | Known constraints, assumptions, security and privacy considerations, pending technical decisions and scope limitations. |
-| `docs/architecture.md` | Proposed modular monolith architecture for the MVP and its components. |
+| `docs/architecture.md` | Proposed Modular Monolith architecture and working technology stack for Lab 03. |
 | `docs/database.md` | Technology-independent conceptual data model, relationships and open questions. |
-| `openapi.yaml` | Simplified proposed API contract for selected MVP operations. |
-| `docs/ui/dashboard-wireframe.html` | Low-fidelity HTML dashboard wireframe; illustrative, not an implemented application. |
+| `openapi.yaml` | Proposed REST API contract for the Lab 03 implementation scope. |
+| `docs/ui/dashboard-wireframe.html` | Low-fidelity static HTML wireframe; illustrative, not an implemented application. |
+| `docs/ui/wireframe.png` | PNG rendering of the illustrative wireframe. |
 
 ## Current Project Status
 
-**Phase:** Requirements analysis and context preparation.
+**Phase:** Lab 03 documentation preparation and consistency review.
 
-The initial requirements proposal, user stories, acceptance criteria, assumptions, constraints and critical reviews have been documented. A modular monolith is proposed for the MVP; implementation technologies and detailed technical architecture remain undecided. Supporting artefacts include a conceptual data model, a simplified API contract and an illustrative HTML wireframe. No application implementation is included.
+Requirements, user stories, architecture, conceptual data model, API contract and UI wireframe are documented for implementation planning. The Lab 03 functional scope, business rules and proposed Modular Monolith technology stack are recorded as course requirements and working project decisions; none changes the limited client-confirmed brief. Remaining business questions concern account lifecycle; technical setup details also remain open.
 
-The next step is to validate open business questions and the proposed scope against any further client guidance, then follow the course guidance for the next development phase.
+Application implementation has not started. No application code has been implemented. The next step is to complete planning and resolve implementation-specific details before development begins.
 
 ## Working Principles
 
 - Consult the documentation before proposing or implementing changes.
 - Distinguish confirmed requirements from assumptions.
 - Do not add unapproved features or make unapproved technical decisions.
-- Keep development aligned with the proposed MVP baseline until it is validated; do not imply client approval.
+- Keep the Lab 03 implementation target distinct from the original client-confirmed needs; do not imply that course requirements or working technical decisions are client-approved.
 - Review and update the documentation when requirements or decisions change.

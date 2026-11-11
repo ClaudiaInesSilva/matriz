@@ -26,8 +26,8 @@ The main objectives of Matriz are to:
 A team member participates in projects and performs tasks.
 
 Proposed needs:
-- View available projects and their tasks.
-- Create and edit tasks, subject to the permissions eventually defined.
+- View all projects and their tasks under the Lab 03 course implementation decisions.
+- Create and edit tasks under the Lab 03 course implementation decisions.
 - Update task status.
 - Follow project progress.
 
@@ -45,32 +45,42 @@ Proposed needs:
 
 ## 4. Functional Requirements
 
-The following requirements define the proposed functional scope.
+The original client brief establishes the need to organise projects, manage tasks and follow work progress. The requirements below incorporate the minimum functional scope specified in Lab 03 for implementation.
 
-| ID | Requirement | Priority | Status |
+The Lab 03 scope extends the earlier proposed MVP. Its additional functionality is included to satisfy the practical exercise and should not be interpreted as evidence that the client independently requested or validated every detail.
+
+| ID | Requirement | Priority | Source / Status |
 |---|---|---|---|
-| FR01 | The application shall allow authorised users to create projects. | Essential | Proposed |
-| FR02 | The application shall display projects available to the user. | Essential | Proposed |
-| FR03 | The application shall allow authorised users to create, view and edit tasks. | Essential | Proposed |
-| FR04 | Each task shall be associated with a project. | Essential | Proposed |
-| FR05 | The application shall assign an initial status when creating a task and allow authorised users to update its status. | Essential | Proposed; initial-status behavior and value pending client validation |
-| FR06 | The application shall display task statuses within their respective projects. | Essential | Proposed |
-| FR07 | The application shall let users follow work progress by viewing the statuses of tasks in a project. This proposal does not require a calculated or numerical completion value. | Essential | Proposed |
-| FR08 | The application may allow tasks to be assigned to team members. | Medium | Candidate feature; pending client validation |
+| FR01 | Any authenticated user shall be able to create a project; its creator is its owner. | Essential | Lab 03 course implementation decision |
+| FR02 | Any authenticated user shall be able to list and view all projects. | Essential | Lab 03 course implementation decision |
+| FR03 | Only a project's owner shall be able to edit or delete it; deletion is rejected with HTTP 409 while the project contains tasks. | Essential | Lab 03 course implementation decision |
+| FR04 | Any authenticated user shall be able to create, view and update tasks in any project. Only the project owner or task creator may delete a task. | Essential | Lab 03 course implementation decision |
+| FR05 | Each task shall belong to a valid project and have a status and priority. Status values are `TODO`, `IN_PROGRESS`, `DONE` (default `TODO`); priority values are `LOW`, `MEDIUM`, `HIGH` (default `MEDIUM`). | Essential | Lab 03 course implementation decision |
+| FR06 | Any authenticated user may add or remove task assignments. Any existing user account may be assigned; multiple assignments are allowed, duplicate task/user assignments are prohibited, and project ownership is not required for eligibility. | Essential | Lab 03 course implementation decision |
+| FR07 | Any authenticated user shall be able to view and add task comments; each comment records its authenticated author and creation date. | Essential | Lab 03 course implementation decision |
+| FR08 | The application shall allow users to log in, log out and retrieve the identity of the currently authenticated user. | Essential | Lab 03 minimum scope |
+| FR09 | The application shall allow authenticated users to search all projects by name, using case-insensitive partial matching after trimming query whitespace; an empty or omitted query returns all projects. | Essential | Lab 03 course implementation decision |
+| FR10 | The application shall allow tasks to be filtered by status and priority. Omitted filters do not restrict results; when both are supplied, both conditions must match. | Essential | Lab 03 course implementation decision |
+| FR11 | The dashboard shall display all projects and counts across their tasks for each of `TODO`, `IN_PROGRESS` and `DONE`, including zero counts. Counts include all priorities and assignees. | Essential | Lab 03 course implementation decision |
 
-“Essential” means essential to this proposed MVP baseline, not approved or prioritised by the client. Task assignment is a candidate feature outside the core baseline until validated.
+Public registration and password recovery are optional extensions and are not part of the required implementation scope. Demo accounts may be created using a database seed.
 
 ### 4.1 Functional Behaviour and Validation
 
-- Project creation must reject missing required information.
-- Task creation must reject missing required information.
-- The application is proposed to assign an initial status when a task is created; an authorised user may change it later. The initial value and allowed status values remain subject to client validation.
-- Tasks must belong to a valid project.
-- Task status updates must use valid statuses.
-- A project without tasks must indicate that there are no task statuses to display; it must not show a fabricated progress value.
-- Task assignment, if later approved, must follow eligibility rules defined by the client.
+- Any authenticated user may list/view all projects and create projects. The backend records the creator as project owner; only that owner may edit or delete the project.
+- Any authenticated user may create, view and update tasks in any project. The backend records the task creator. Only the project owner or task creator may delete a task.
+- Any authenticated user may view and add task comments; the backend records the authenticated user as author and sets the creation date.
+- Any authenticated user may add or remove assignments. Any existing user account may be assigned regardless of project ownership. Prevent duplicate assignments.
+- Tasks must belong to valid projects. Project deletion must return HTTP `409 Conflict` when any tasks remain. Task deletion also removes its assignments and comments.
+- Project names are required and contain 3–150 characters; project descriptions are optional and at most 2,000 characters.
+- Task titles are required and contain 3–150 characters; task descriptions are optional and at most 2,000 characters. Status and priority use the values and defaults in FR05.
+- Comment content contains 1–2,000 characters and must not consist only of whitespace.
+- Project search trims leading/trailing query whitespace, matches partial names without case sensitivity, and returns all projects for an empty or omitted query.
+- Task filters may be used separately or together. When both are supplied, results satisfy both; omitted filters do not restrict results.
+- Dashboard counts are derived from tasks across all projects and include all statuses, including zero, regardless of task priority or assignee. Do not calculate percentages or add charts/advanced analytics.
+- Invalid input and unauthorised operations must be handled without creating inconsistent records or exposing protected data.
 
-The required fields, task statuses, access rules and assignment rules remain to be finalised.
+These are Lab 03 course implementation decisions, not requirements independently confirmed by the original client. Comment editing/deletion is outside the required scope.
 
 ## 5. Non-Functional Requirements
 
@@ -89,49 +99,84 @@ Specific performance targets, availability requirements, accessibility standards
 
 ## 6. MVP Scope
 
-The proposed Minimum Viable Product (MVP) will focus on the smallest useful set of features needed to organise projects, manage tasks and track work progress.
+The original proposed MVP focused on basic project management, task management, task status updates and progress visibility. Lab 03 expands this scope and defines the minimum functionality to be implemented in the practical exercise.
 
-### Core proposed MVP baseline (pending client validation)
+The scope below is the **Lab 03 implementation target**. It does not imply that every feature was independently requested or validated by the original client.
 
-- Create and view projects.
-- Create, view and edit tasks.
-- Associate tasks with projects.
-- Update task status.
-- Assign an initial status to each newly created task, then allow authorised users to change it. The initial value and status vocabulary remain undecided.
-- View task status within each project.
-- Follow work progress by viewing task statuses within a project. No percentage or aggregate calculation is included in this baseline.
+### 6.1 Required Implementation Scope
 
-### Candidate feature pending validation
+- **Authentication:** Log in, log out and retrieve the currently authenticated user.
+- **Project management:** All authenticated users can create, list and view projects. The creator owns the project; only its owner can edit/delete it. Deletion returns `409 Conflict` while tasks remain.
+- **Task management:** Any authenticated user can create, view and update tasks in any project. Only the project owner or task creator can delete a task. Deleting a task removes its assignments and comments.
+- **Task fields:** Required title (3–150 characters); optional description (maximum 2,000); statuses `TODO`, `IN_PROGRESS`, `DONE` (default `TODO`); priorities `LOW`, `MEDIUM`, `HIGH` (default `MEDIUM`).
+- **Task assignments:** Any authenticated user may add or remove assignments. Any existing account may be assigned regardless of project ownership. Multiple assignments are supported; duplicate user/task pairs are prohibited.
+- **Comments:** Any authenticated user can add and view task comments. Content must be 1–2,000 characters and not whitespace-only; author and creation date are recorded by the backend.
+- **Search:** Case-insensitive partial project-name search after trimming query-edge whitespace; empty or omitted query lists all projects.
+- **Filters:** Filter tasks by status and/or priority; if both are supplied, results match both; omitted filters do not restrict results.
+- **Dashboard:** Display all projects and task counts across all project tasks for all three statuses, including zero. Counts ignore priority and assignees; no percentages, charts or advanced analytics.
 
-- Task assignment to team members. Do not treat this as approved MVP scope until the client confirms it and defines eligibility.
+### 6.2 Optional Extensions
 
-### Proposed out-of-scope items (not confirmed client exclusions)
+The following are optional and are not required for the initial implementation:
+
+- Public user registration.
+- Password recovery.
+
+Demo accounts may be created through a database seed to support authentication and access-control testing.
+
+### 6.3 Out of Scope for the Initial Implementation
+
+Unless required by a later exercise or explicitly approved, the following are outside the current implementation scope:
 
 - Notifications and automated reminders.
 - Advanced reporting and analytics.
 - External integrations with other project management tools.
 - Advanced workflow automation.
-- Advanced custom dashboards.
-- Complex role and permission management beyond the access controls required to protect data.
+- Advanced custom dashboards beyond the required dashboard.
+- Public registration and password recovery.
 
-Basic security and access protection remain necessary considerations even when advanced permission management is out of scope.
+Basic authentication, authorisation, input validation and protection of project and task data remain required; they are not optional advanced features.
+
+### 6.4 Scope and Validation Notes
+
+The Lab 03 functional scope takes precedence as the implementation target for this practical exercise. The original client brief remains the source of the application's high-level purpose.
+
+The approved project/course implementation decisions above are not client-confirmed requirements. Remaining matters such as account representation, comment editing/deletion, and technical setup details must remain explicit; do not infer additional business rules.
 
 ## 7. Open Questions
 
-The following questions should be clarified before the requirements are considered final:
+Lab 03 defines the minimum functional scope, but some business rules and implementation details remain unspecified. The following questions must be resolved or documented as explicit implementation decisions before the affected functionality is developed.
 
-- What information must a project contain?
-- What information must a task contain?
-- Which task statuses should be available?
-- Should the application assign an initial task status at creation? The proposed behavior is that it does; the initial value and status vocabulary remain undecided.
-- Can users create projects, or is this restricted to project managers?
-- Should tasks be assigned to specific team members?
-- Must task assignment be mandatory or optional?
-- Is viewing task statuses sufficient to follow progress, or is another representation required? No numerical percentage is assumed.
-- What access restrictions are required?
-- Are the provisional user types useful, and are they separate roles or overlapping responsibilities?
-- Are authentication, notifications, deadlines or reporting required in the initial version?
+### 7.1 Project and Task Rules
+
+- Are project or task fields beyond the documented name/description/title/status/priority required for this implementation?
+
+### 7.2 Authentication and Access Control
+
+- How are demo user accounts represented, and which account attributes are required?
+- Are comment editing and deletion needed in a later extension? They are not part of the Lab 03 required scope.
+
+### 7.3 Validation and Error Handling
+
+- Are any API validation/error details needed beyond those documented in `openapi.yaml`?
+
+### 7.4 Technical and Testing Details
+
+- Which versions of Java, Spring Boot, Node.js and the frontend dependencies will be used?
+- How will database schema changes be managed?
+- Which environment variables are required, and how will configuration be documented?
+- Which automated tests will verify validation, persistence and access control?
+
+Decisions made to resolve these questions must be documented in the relevant project files. Where the lab does not specify a business rule, the implementation should use a simple, consistent and secure rule, clearly recording it as an implementation decision rather than a client-confirmed requirement.
 
 ## 8. Current Status
 
-This document represents an initial functional proposal based on the client's brief and the analysis performed during the practical exercises. Requirements and priorities remain subject to validation.
+This document preserves the original client brief and incorporates the minimum functional scope specified in Lab 03 as the implementation target.
+
+The original client-confirmed need remains to organise projects, manage tasks and follow work progress. The expanded functionality in Sections 4 and 6 is included to satisfy the practical exercise and should not be interpreted as independent confirmation of every detail by the client.
+
+The project/course decisions for permissions, assignment eligibility, dependent-record deletion, project search, task filters, dashboard counts and the specified validation rules are recorded in this document. Remaining questions concern account representation, any additional fields, and technical setup; these are not client-confirmed requirements.
+
+The proposed modular monolith architecture and working technology stack are documented separately in `docs/architecture.md`. The database model, API contract, user stories, wireframe and implementation plan must be reviewed and updated for consistency with this scope before implementation begins.
+
+No application code has been implemented as part of this requirements update.
