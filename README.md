@@ -1,78 +1,119 @@
-
 # Matriz
 
-Matriz is a project and task management application intended for work teams within a company.
+Matriz is a project and task management application intended for work teams within a company. The client brief confirms the need to organise projects, manage tasks and follow work progress; detailed workflows and business rules remain project decisions or unresolved questions.
 
-## Problem Statement
+## Current implementation
 
-The client brief confirms one need: teams need an application to organise projects, manage tasks and follow work progress. It does not define detailed functionalities, business rules, technical requirements or development priorities.
+The repository contains a runnable Spring Boot backend foundation with PostgreSQL persistence, JPA mappings, Flyway migrations and reproducible demonstration records. The React/TypeScript/Vite frontend is a starter scaffold. Authentication, functional project and task workflows, and a complete frontend have not been implemented.
 
-Matriz aims to provide a structured way to manage project work and make task progress visible.
+The persistence model currently covers users, projects, tasks, task assignments and comments. The backend has been started successfully on port 8080 against PostgreSQL 18.7; Flyway validated and applied both migrations, its history recorded both as successful, and Hibernate schema validation succeeded. The frontend production build and development server have also been verified. These checks do not establish application-level workflow or persistence constraint test coverage.
 
-## Main Objectives
+## Technology
 
-- Organise work into projects.
-- Create and manage tasks associated with projects.
-- Track task status and follow work progress.
-- Establish a clear, documented foundation for future development.
+- Backend: Java 21, Spring Boot 4.1.2, Maven (install Maven locally), Spring Data JPA and Hibernate.
+- Database: PostgreSQL 18.7.
+- Migrations: Flyway 13.12.1 with Spring Boot integration.
+- Frontend: React 19.3.1, TypeScript 7.0.2, Vite declared as `^8.3.6` (lockfile resolves 8.3.8), Node.js 24 and npm 11.
 
-The first three points reflect the client's high-level brief. It does not specify the detailed functionality or rules below.
+## Repository structure
 
-## Lab 03 Implementation Scope
+```text
+backend/                         Spring Boot application and Maven build
+  src/main/java/                 Application and JPA mappings
+  src/main/resources/
+    application.properties       Database and persistence configuration
+    db/migration/                Versioned Flyway SQL migrations
+frontend/                        React, TypeScript and Vite application
+docs/                             Requirements, design and project documentation
+openapi.yaml                      Proposed REST API contract
+.env.example                      Fictional local configuration template
+```
 
-The following functionality forms the documented Lab 03 course implementation target. These course requirements and working decisions expand the original brief; they are not additional requirements independently confirmed by the client:
+## Prerequisites
 
-- Authentication: log in, log out and retrieve the current authenticated user.
-- Projects: create, list and view all projects; only the owner can edit or delete.
-- Tasks: create, list, view, edit and delete tasks associated with projects.
-- Task status: `TODO`, `IN_PROGRESS` and `DONE`, with `TODO` as the default.
-- Task priority: `LOW`, `MEDIUM` and `HIGH`, with `MEDIUM` as the default.
-- Any authenticated user can assign existing users to a task and remove assignments; project ownership does not affect eligibility.
-- Add and list task comments with author and creation date.
-- Search projects by name and filter tasks by status and priority.
-- Show all projects and task counts grouped by status on the dashboard.
+- Git.
+- Java Development Kit 21.
+- Maven (required for the `mvn` commands below; no Maven Wrapper is included).
+- PostgreSQL 18 (or a compatible PostgreSQL installation).
+- Node.js 24 and npm 11.
+- PowerShell examples below assume Windows. Commands can be adapted for another shell.
 
-Project visibility and ownership, task and assignment permissions, deletion behavior, assignment eligibility, search and filter semantics, dashboard counts, and project validation are recorded as approved working rules for the Lab 03 course implementation. They are not additional requirements independently confirmed by the original client. Account lifecycle details remain open.
+## Local database setup
 
-## Proposed Architecture and Technology Stack
+Create an application role and database on a fresh local PostgreSQL installation. Run these commands in `psql` as a local PostgreSQL administrator. `\password matriz_app` prompts for the role password without putting it in SQL or shell history.
 
-The proposed architecture is a Modular Monolith: a single backend deployment organized into modules, with a separate frontend communicating through a REST API. The current working technology proposal is:
+```sql
+CREATE ROLE matriz_app LOGIN;
+```
 
-- Backend: Java, Spring Boot and Maven.
-- Frontend: React with TypeScript, using Vite and npm.
-- Database and persistence: PostgreSQL and Spring Data JPA.
-- Security: Spring Security with server-side session-based authentication.
-- Backend testing: JUnit 5 and Spring Boot Test.
+In the same `psql` session, set the password interactively and create the database:
 
-These are project working decisions for Lab 03, not client-confirmed technical requirements. Specific versions, configuration and deployment details remain to be established.
+```text
+\password matriz_app
+```
 
-## Documentation Structure
+```sql
+CREATE DATABASE matriz_db OWNER matriz_app;
+```
 
-The `docs/` directory contains the main project documentation.
+Configure the backend environment in the same PowerShell window from which it will be started:
 
-| File | Purpose |
-|---|---|
-| `docs/requirements.md` | Application vision, user types, functional and non-functional requirements, MVP scope and open questions. |
-| `docs/user-stories.md` | Initial user stories, priorities, acceptance criteria and exceptional cases. |
-| `docs/constraints.md` | Known constraints, assumptions, security and privacy considerations, pending technical decisions and scope limitations. |
-| `docs/architecture.md` | Proposed Modular Monolith architecture and working technology stack for Lab 03. |
-| `docs/database.md` | Technology-independent conceptual data model, relationships and open questions. |
-| `openapi.yaml` | Proposed REST API contract for the Lab 03 implementation scope. |
-| `docs/ui/dashboard-wireframe.html` | Low-fidelity static HTML wireframe; illustrative, not an implemented application. |
-| `docs/ui/wireframe.png` | PNG rendering of the illustrative wireframe. |
+```powershell
+$env:DB_URL = 'jdbc:postgresql://localhost:5432/matriz_db'
+$env:DB_USERNAME = 'matriz_app'
+$securePassword = Read-Host 'Enter the local matriz_app password' -AsSecureString
+$env:DB_PASSWORD = [System.Net.NetworkCredential]::new('', $securePassword).Password
+$securePassword.Dispose()
+```
 
-## Current Project Status
+Alternatively, set the three variables in the IntelliJ IDEA run configuration. Spring Boot does **not** automatically load `.env` files. Provide environment variables through the shell/process environment or the IDE run configuration. `.env.example` documents the expected variable names and URL using fictional values; it is a reference template, not a credential source. A developer may copy it as a reminder, but must provide actual values through a supported environment-variable mechanism and keep any real `.env` file uncommitted. The repository `.gitignore` excludes real `.env` files and permits `.env.example`.
 
-**Phase:** Lab 03 documentation preparation and consistency review.
+## Start the backend
 
-Requirements, user stories, architecture, conceptual data model, API contract and UI wireframe are documented for implementation planning. The Lab 03 functional scope, business rules and proposed Modular Monolith technology stack are recorded as course requirements and working project decisions; none changes the limited client-confirmed brief. Remaining business questions concern account lifecycle; technical setup details also remain open.
+From the repository root in PowerShell, after setting the variables above:
 
-Application implementation has not started. No application code has been implemented. The next step is to complete planning and resolve implementation-specific details before development begins.
+```powershell
+cd backend
+mvn spring-boot:run
+```
 
-## Working Principles
+The backend listens on port 8080. Flyway applies pending versioned migrations from `backend/src/main/resources/db/migration` automatically at startup. A successful migration is recorded in `flyway_schema_history` and is not reapplied on each startup. Normal application restarts therefore do not reset existing data. Hibernate uses schema validation (`ddl-auto=validate`); it does not create or reset the schema.
 
-- Consult the documentation before proposing or implementing changes.
-- Distinguish confirmed requirements from assumptions.
-- Do not add unapproved features or make unapproved technical decisions.
-- Keep the Lab 03 implementation target distinct from the original client-confirmed needs; do not imply that course requirements or working technical decisions are client-approved.
-- Review and update the documentation when requirements or decisions change.
+V1 creates `users`, `projects`, `tasks`, `task_assignments` and `comments`. V2 inserts reproducible demonstration data: two users, two projects with different owners, two tasks, one assignment from each task to a user other than that project's owner (two cross-owner assignments), and one comment. Demo users `demo.alex` and `demo.sam` have no password hashes and cannot be used to log in.
+
+## Start and build the frontend
+
+Open a separate PowerShell window:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Vite prints the local development URL. To create the production build:
+
+```powershell
+npm run build
+```
+
+## Inspect the database
+
+In pgAdmin, connect to the local PostgreSQL server, open `matriz_db`, and inspect `public` tables. `flyway_schema_history` shows migration versions and success status; the five application tables contain the demonstration records.
+
+The same data can be inspected with `psql`:
+
+```sql
+SELECT version, description, success FROM flyway_schema_history ORDER BY installed_rank;
+SELECT username, display_name FROM users ORDER BY username;
+SELECT name, owner_id FROM projects ORDER BY name;
+SELECT title, status, priority FROM tasks ORDER BY title;
+SELECT task_id, user_id FROM task_assignments ORDER BY task_id, user_id;
+SELECT content, created_at FROM comments ORDER BY created_at;
+```
+
+## Limitations and project decisions
+
+Authentication, functional project/task workflows, assignments/comments through application endpoints, search, filtering and dashboard behavior are not implemented. The API document is a proposed contract, not evidence of implemented endpoints. Detailed behaviors in requirements and user stories are project implementation decisions, not additional client-confirmed requirements. Account lifecycle, session/CSRF details, deployment, and non-functional targets remain unresolved.
+
+See `docs/requirements.md`, `docs/user-stories.md` and the other files in `docs/` for scope, assumptions and open questions.

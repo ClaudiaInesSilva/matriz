@@ -141,7 +141,7 @@ Basic authentication, authorisation, input validation and protection of project 
 
 The Lab 03 functional scope takes precedence as the implementation target for this practical exercise. The original client brief remains the source of the application's high-level purpose.
 
-The approved project/course implementation decisions above are not client-confirmed requirements. Remaining matters such as account representation, comment editing/deletion, and technical setup details must remain explicit; do not infer additional business rules.
+The project implementation decisions above are not client-confirmed requirements. Remaining matters such as account representation and comment editing/deletion must remain explicit; do not infer additional business rules. Selected technical decisions are documented in `docs/architecture.md`.
 
 ## 7. Open Questions
 
@@ -162,12 +162,13 @@ Lab 03 defines the minimum functional scope, but some business rules and impleme
 
 ### 7.4 Technical and Testing Details
 
-- Which versions of Java, Spring Boot, Node.js and the frontend dependencies will be used?
-- How will database schema changes be managed?
-- Which environment variables are required, and how will configuration be documented?
+- The project has selected Java 21, Spring Boot 4.1.2, React 19.3.1, TypeScript 7.0.2, Vite (`^8.3.6`, resolving to 8.3.8), Node.js 24, npm 11, PostgreSQL 18.7 and Flyway 13.12.1. These are project decisions, not client-confirmed requirements.
+- Flyway manages versioned database schema changes and applies pending migrations at backend startup.
+- The backend reads database connection settings from `DB_URL`, `DB_USERNAME` and `DB_PASSWORD`; provide them through the process environment or IDE run configuration. Spring Boot does not automatically load `.env` files.
+- Which deployment and hosting arrangements will be used?
 - Which automated tests will verify validation, persistence and access control?
 
-Decisions made to resolve these questions must be documented in the relevant project files. Where the lab does not specify a business rule, the implementation should use a simple, consistent and secure rule, clearly recording it as an implementation decision rather than a client-confirmed requirement.
+Decisions made to resolve the remaining questions must be documented in the relevant project files. Where the documented project scope does not specify a business rule, record an explicit implementation decision rather than presenting it as client-confirmed.
 
 ## 8. Current Status
 
@@ -175,8 +176,8 @@ This document preserves the original client brief and incorporates the minimum f
 
 The original client-confirmed need remains to organise projects, manage tasks and follow work progress. The expanded functionality in Sections 4 and 6 is included to satisfy the practical exercise and should not be interpreted as independent confirmation of every detail by the client.
 
-The project/course decisions for permissions, assignment eligibility, dependent-record deletion, project search, task filters, dashboard counts and the specified validation rules are recorded in this document. Remaining questions concern account representation, any additional fields, and technical setup; these are not client-confirmed requirements.
+The project decisions for permissions, assignment eligibility, dependent-record deletion, project search, task filters, dashboard counts, specified validation rules and the technical foundation are recorded in this document and `docs/architecture.md`. Remaining questions concern account representation, any additional fields, deployment, and future test coverage; these are not client-confirmed requirements.
 
-The proposed modular monolith architecture and working technology stack are documented separately in `docs/architecture.md`. The database model, API contract, user stories, wireframe and implementation plan must be reviewed and updated for consistency with this scope before implementation begins.
+The selected Modular Monolith architecture and technology stack are documented in `docs/architecture.md`. The database model, API contract, user stories, wireframe and implementation plan should remain consistent with this scope.
 
 No application code has been implemented as part of this requirements update.

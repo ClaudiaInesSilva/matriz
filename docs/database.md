@@ -2,9 +2,9 @@
 
 ## 1. Summary and Scope
 
-This document defines the proposed conceptual data model for the Matriz implementation required by Lab 03. It describes the entities, attributes and relationships needed to support user authentication, project and task management, multiple task assignees, task comments and progress visibility.
+This document defines the proposed conceptual data model for the Matriz project implementation. It describes the entities, attributes and relationships needed to support user authentication, project and task management, multiple task assignees, task comments and progress visibility.
 
-The original client brief establishes the need to organise projects, manage tasks and follow work progress. Lab 03 expands the earlier proposed MVP and defines the minimum functionality to implement for the practical exercise. This expanded scope should not be interpreted as independent confirmation that the client validated every detailed behaviour.
+The original client brief establishes the need to organise projects, manage tasks and follow work progress. The documented project scope extends the initial client brief with project implementation decisions; it is not additional client-confirmed scope. This expanded scope should not be interpreted as independent confirmation that the client validated every detailed behaviour.
 
 The model must support:
 
@@ -16,13 +16,13 @@ The model must support:
 - Project-name search and task status/priority filtering with the approved matching rules.
 - Dashboard counts derived from all tasks across all projects, grouped for all three statuses including zero counts.
 
-The model is conceptual. Database-specific implementation types, schema migrations, indexes and configuration will be defined during implementation planning. The selected working database technology is PostgreSQL, as documented in `docs/architecture.md`.
+The sections below retain the conceptual model and describe its implemented PostgreSQL realization. PostgreSQL schema details, migration files and configuration are recorded separately so conceptual rules remain distinct from implementation details.
 
-These are project decisions for the Lab 03 course implementation, not client-confirmed requirements. Account lifecycle details remain unspecified. Project/task fields, validation, access and deletion behavior are recorded below.
+These are project decisions for the project implementation, not client-confirmed requirements. Account lifecycle details remain unspecified. Project/task fields, validation, access and deletion behavior are recorded below.
 
 ## 2. Entities and Attributes
 
-The entities below represent the proposed data model for the Lab 03 implementation. Attribute types are conceptual labels rather than database-specific types. Requiredness and validation rules must be implemented consistently with the requirements and API contract.
+The entities below represent the proposed data model for the project implementation. Attribute types in this conceptual section are labels rather than database-specific types. The implemented schema is summarized in section 8.
 
 ### User — account entity
 
@@ -59,12 +59,12 @@ Represents a task associated with one project.
 | `task_id` | Primary key (PK) | Unique identifier for the task. |
 | `project_id` | Foreign key (FK) | References `Project.project_id`; each task belongs to one valid project. |
 | `creator_id` | Foreign key (FK) | References `User.user_id`; records the authenticated user who created the task. |
-| `title` | — | Task title. Lab 03 specifies a length between 3 and 150 characters. |
-| `description` | — | Optional task description, with a maximum length of 2,000 characters under the lab's stated validation rules. |
+| `title` | — | Task title. The documented rules specify a length between 3 and 150 characters. |
+| `description` | — | Optional task description, with a maximum length of 2,000 characters under the documented validation rules. |
 | `status` | — | Current task status. Supported values: `TODO`, `IN_PROGRESS`, `DONE`. Default: `TODO`. |
 | `priority` | — | Task priority. Supported values: `LOW`, `MEDIUM`, `HIGH`. Default: `MEDIUM`. |
 
-The status and priority values and defaults above follow the Lab 03 exercise specification. They must be used consistently in the API, database and interface.
+The status and priority values and defaults above follow the documented project decision. They must be used consistently in the API, database and interface.
 
 ### TaskAssignment — task-user association
 
@@ -86,10 +86,10 @@ Represents a comment added to a task.
 | `comment_id` | Primary key (PK) | Unique identifier for the comment. |
 | `task_id` | Foreign key (FK) | References the task being commented on. |
 | `author_id` | Foreign key (FK) | References `User.user_id`; the backend derives the author from the authenticated identity. |
-| `content` | — | Comment text. Lab 03 specifies a length between 1 and 2,000 characters and rejects whitespace-only content. |
+| `content` | — | Comment text. The documented rules require 1–2,000 characters and reject whitespace-only content. |
 | `created_at` | — | Date and time the comment was created, recorded by the backend. |
 
-Any authenticated user may add and list comments on any task. Comment editing is not included in the Lab 03 scope. Deleting a task also deletes its comments.
+Any authenticated user may add and list comments on any task. Comment editing is not included in the documented scope. Deleting a task also deletes its comments.
 
 ### Access Rules and Derived Information
 
@@ -104,10 +104,10 @@ Project deletion is restricted while tasks exist (`409 Conflict`). Task deletion
 | User to Project (owner) | One User may own zero or many Projects; each Project has one owner. | The backend records the authenticated project creator as owner. |
 | Project to Task | One Project has zero or many Tasks; each Task belongs to exactly one Project. | Projects may have no tasks; every task must reference a valid project. |
 | User to Task (creator) | One User may create zero or many Tasks; each Task has exactly one creator. | Supports the approved task deletion rule. |
-| User to Task (assignee) | One User may be assigned to zero or many Tasks; each Task may have zero or many assigned Users. | Lab 03 requires multiple eligible users to be assignable to a task. |
+| User to Task (assignee) | One User may be assigned to zero or many Tasks; each Task may have zero or many assigned Users. | The documented rules require multiple eligible users to be assignable to a task. |
 | Task to TaskAssignment | One Task has zero or many TaskAssignment records; each TaskAssignment refers to exactly one Task. | Implements the task side of the many-to-many assignment relationship. |
 | User to TaskAssignment | One User has zero or many TaskAssignment records; each TaskAssignment refers to exactly one User. | Implements the user side of the many-to-many assignment relationship. |
-| Task to Comment | One Task has zero or many Comments; each Comment belongs to exactly one Task. | Lab 03 requires comments to be added to and listed for a task. |
+| Task to Comment | One Task has zero or many Comments; each Comment belongs to exactly one Task. | The documented rules require comments to be added to and listed for a task. |
 | User to Comment (author) | One User may author zero or many Comments; each Comment has exactly one author. | The backend records the authenticated user as the comment author. |
 
 The `TaskAssignment` entity is an association between `Task` and `User`. The pair `(task_id, user_id)` must be unique so that a user cannot be assigned to the same task more than once.
@@ -136,7 +136,7 @@ Project ownership governs only project edit/delete and is one of the two bases f
 
 ## 5. Mermaid ER Diagram
 
-The diagram represents the proposed conceptual data model for the Lab 03 implementation. `PK` identifies a primary key and `FK` identifies a foreign key.
+The diagram represents the proposed conceptual data model for the project implementation. `PK` identifies a primary key and `FK` identifies a foreign key.
 
 `TASK_ASSIGNMENT` implements the many-to-many relationship between users and tasks. Its composite primary key prevents duplicate assignments of the same user to the same task.
 
@@ -202,9 +202,9 @@ Referential behavior: a project with tasks cannot be deleted; task deletion casc
 
 ## 6. Assumptions and Questions for Implementation
 
-### 6.1 Decisions Based on Lab 03
+### 6.1 Documented Project Decisions
 
-The following model elements reflect the minimum functional scope and validation rules specified by Lab 03:
+The following model elements reflect the minimum functional scope and validation rules specified by documented project scope:
 
 - User accounts support authentication and identification of the current user.
 - Any authenticated user can create/list/view all projects; the creator is owner and only the owner can edit/delete.
@@ -223,9 +223,9 @@ The following model elements reflect the minimum functional scope and validation
 - Dashboard counts across all projects include `TODO`, `IN_PROGRESS` and `DONE`, including zero; counts ignore priority and assignees and are derived from tasks.
 - Project search is trimmed, case-insensitive partial matching; empty/omitted query returns all projects. Task filters combine with AND; omitted filters do not restrict results.
 
-### 6.2 Recorded Project Decisions for the Lab 03 Implementation
+### 6.2 Recorded Project Decisions
 
-These project decisions are approved for the course implementation, not independently confirmed by the original client:
+These project decisions are approved for the project implementation, not independently confirmed by the original client:
 
 - Each project has one owner, identified by `owner_id`; the backend derives ownership and comment authorship from the authenticated user, not client-supplied identity values.
 - Each task records `creator_id`, used with project ownership to authorize deletion.
@@ -233,9 +233,9 @@ These project decisions are approved for the course implementation, not independ
 - Any existing user account is eligible for assignment; assignment eligibility does not require project ownership.
 - The project/task/comment/assignment permissions, project restriction and task cascade deletion rules in §4 apply.
 - Dashboard counts, project search and task filters follow the rules in §4 and use existing records rather than separate persisted data.
-- Comments can be added and listed; editing is outside Lab 03 scope.
+- Comments can be added and listed; editing is outside documented scope.
 
-These decisions implement the course scope; they are not additional requirements confirmed by the original client.
+These decisions implement the project scope; they are not additional requirements confirmed by the original client.
 
 ### 6.3 Remaining Questions
 
@@ -250,17 +250,35 @@ Decisions must be recorded consistently in the requirements, architecture, API c
 
 ## 7. Consistency Review and Limitations
 
-- The model includes the entities needed to support the Lab 03 functional scope: `User`, `Project`, `Task`, `TaskAssignment` and `Comment`.
+- The model includes the entities needed to support the documented project scope: `User`, `Project`, `Task`, `TaskAssignment` and `Comment`.
 - Each task belongs to exactly one project, while a project may contain zero or many tasks.
 - Multiple task assignees are represented through the `TaskAssignment` association rather than a single assignee field.
 - The composite key on `TaskAssignment` prevents duplicate assignments of the same user to the same task.
 - Comments are associated with a task and a user author. Their creation date is recorded as part of the comment.
-- Task status and priority values and defaults follow the Lab 03 specification.
+- Task status and priority values and defaults follow the documented project decisions.
 - Dashboard counts, project search and task filters use existing project and task records. They do not require separate data entities.
 - Project ownership and task creator support the approved project-edit/delete and task-delete rules; all authenticated users otherwise have the documented project/task/comment access.
 - The model records the approved restrictive project deletion and task dependent-record cascades.
-- The model does not prescribe database-specific implementation details, indexes, migration scripts or deployment configuration. These will be addressed during implementation.
+- The conceptual model is realized by PostgreSQL migrations; see section 8. Deployment configuration remains outside this data model.
 - The model must remain consistent with `docs/requirements.md`, `docs/user-stories.md`, `docs/architecture.md`, `docs/constraints.md` and `openapi.yaml`.
 - Any unresolved business rules must be documented before implementing the affected operations.
 
-This model is the proposed conceptual basis for the Lab 03 implementation. It should be reviewed alongside the API contract and implementation plan before database schema creation begins.
+This conceptual model should be read alongside the API contract, implementation plan and implemented schema in section 8.
+
+## 8. Implemented PostgreSQL Schema and Migrations
+
+The conceptual entities are implemented in PostgreSQL by versioned Flyway migrations under `backend/src/main/resources/db/migration`. V1 creates `users`, `projects`, `tasks`, `task_assignments` and `comments`; V2 inserts deterministic demonstration records. Flyway is enabled in `backend/src/main/resources/application.properties`, uses `classpath:db/migration`, and applies pending migrations at application startup. Successful versions are recorded in `flyway_schema_history`; normal restarts do not reapply them. Hibernate uses schema validation and does not create or reset tables.
+
+| Table | Implemented representation and constraints |
+|---|---|
+| `users` | UUID primary key; unique non-null `username` (100); nullable `password_hash` (255); non-null `display_name` (150). Demo accounts have null password hashes. |
+| `projects` | UUID primary key; non-null name (3–150 characters); nullable description (up to 2,000); required owner FK with deletion restricted. |
+| `tasks` | UUID primary key; required project and creator FKs, both deletion restricted; title (3–150); optional description (up to 2,000); status constrained to `TODO`, `IN_PROGRESS`, `DONE` with `TODO` default; priority constrained to `LOW`, `MEDIUM`, `HIGH` with `MEDIUM` default. |
+| `task_assignments` | Task and user FKs; composite primary key `(task_id, user_id)` prevents duplicates; task deletion cascades and user deletion is restricted. |
+| `comments` | UUID primary key; task and author FKs; content length 1–2,000 and non-whitespace constraint; required `TIMESTAMPTZ`; task deletion cascades and author deletion is restricted. |
+
+Indexes are created for `tasks.project_id`, `task_assignments.user_id` and `comments.task_id`. The migration schema encodes structural constraints; it does not implement application authorization, authentication or API workflows. Account identifier/lifecycle and client-facing validation behavior remain unresolved. The project deletion rule is supported by the restrictive task foreign key; application-specific conflict responses are not implemented.
+
+V2 seeds two users (`demo.alex`, `demo.sam`), two projects owned by different users, two tasks, two cross-owner assignments and one comment. Seed inserts use fixed identifiers and conflict-safe inserts. These records support local inspection and persistence startup verification; they are not usable login accounts.
+
+Flyway validated and applied both migrations to a local PostgreSQL 18.7 database, and its history table recorded both as successful. Hibernate schema validation also succeeded. These checks do not establish that persistence constraint tests or application-level integration tests have passed.

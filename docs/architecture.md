@@ -1,89 +1,36 @@
-# Matriz — Architecture Proposal
+# Matriz — Architecture
 
-## 1. Architecture Options
+## Architecture decision
 
-### Monolith
+Matriz uses a modular monolith: one Spring Boot backend deployment organized into domain packages, with a separate React frontend. The backend contains persistence packages for users, projects, tasks, assignments and comments. The frontend is intended to communicate with the backend through a REST API as workflows are implemented. Microservices are not part of the current architecture decision.
 
-The application is developed and deployed as a single unit.
+One backend deployment keeps deployment and operational complexity low. Internal modules separate responsibilities and support maintainability. Microservices would add communication and deployment complexity that is unnecessary for the current project scope.
 
-- **Advantages:** Simple to develop, test and deploy.
-- **Disadvantages:** Responsibilities can become tightly coupled as the application grows.
-- **Suitability:** Could support the Lab 03 implementation scope as a single application.
+The client brief confirms only the need to organise projects, manage tasks and follow work progress. Detailed workflows and access rules remain project implementation decisions documented in requirements and user stories; they are not additional client-confirmed requirements.
 
-### Modular Monolith
+## Implemented technology foundation
 
-The application is deployed as a single unit but organised into modules with separate responsibilities.
-
-- **Advantages:** Keeps deployment simple while improving separation of concerns and maintainability.
-- **Disadvantages:** Requires clear module boundaries and discipline to prevent excessive coupling.
-- **Suitability:** Proposed for the Lab 03 implementation scope, with internal responsibility boundaries while retaining a single backend deployment.
-
-### Microservices
-
-The application is divided into independently deployable services.
-
-- **Advantages:** Services can be developed, deployed and scaled independently when there is a genuine need.
-- **Disadvantages:** Introduces additional complexity in communication, deployment, monitoring and data coordination.
-- **Suitability:** Not selected for Lab 03; the documented scope does not require independently deployed services.
-
-## 2. Recommended Architecture
-
-**Proposed decision for Lab 03: Modular Monolith.**
-
-A Modular Monolith offers a good balance between simplicity and maintainability for Matriz. Authentication, project management, task management, assignments, comments, search, filtering and dashboard counts can operate within one backend application while keeping their responsibilities separate.
-
-This avoids the additional operational complexity of microservices while providing a clearer internal structure than an unstructured monolith. This is a proposed working architecture for the Lab 03 course implementation, not a requirement confirmed by the client.
-
-## 3. Main Components and Responsibilities
-
-- **Authentication:** Support login, logout and retrieval of the current authenticated user using the proposed server-side session approach.
-- **Project Management:** Any authenticated user can create, list and view all projects, and search by name. The creator owns a project; only its owner can edit or delete it. Deletion is restricted while tasks exist.
-- **Task Management:** Create, list, view, edit and delete project tasks; manage status (`TODO`, `IN_PROGRESS`, `DONE`, default `TODO`), priority (`LOW`, `MEDIUM`, `HIGH`, default `MEDIUM`) and task filters.
-- **Assignments:** Any authenticated user may add or remove assignments. Support multiple assignees; any existing user account is eligible regardless of project ownership, and duplicate task/user pairs are prohibited.
-- **Comments:** Any authenticated user can add and list task comments with author and creation date.
-- **Dashboard:** Show all projects and task counts across them for all three statuses, including zero; derive counts from task data.
-- **Shared Validation and Access Protection:** Enforce the approved project and task rules. Any authenticated user can create, view and update tasks in any project; only the project owner or task creator can delete a task. Project deletion is restricted while tasks exist, and task deletion removes assignments and comments.
-
-These responsibilities are internal application modules, not separately deployed services. The Lab 03 scope is a course implementation target and does not imply client confirmation of the detailed features.
-
-## 4. Technology Decisions, Assumptions and Pending Decisions
-
-### 4.1 Proposed Technology Stack
-
-The following technology stack has been selected as the working proposal for the Matriz implementation in Lab 03. These are implementation decisions made for the project and are not requirements explicitly imposed by the client or instructor.
-
-| Area | Technology | Purpose |
+| Area | Selected technology | Version / detail |
 |---|---|---|
-| Programming language | Java | Backend development |
-| Backend framework | Spring Boot | REST API, business logic and application configuration |
-| Build tool | Maven | Dependency management and build automation |
-| Frontend | React with TypeScript | User interface |
-| Frontend tooling | Vite and npm | Frontend development and dependency management |
-| Database | PostgreSQL | Persistent data storage |
-| Data access | Spring Data JPA | Database access and persistence |
-| Authentication and access protection | Spring Security with server-side session-based authentication | Authentication and request authorisation |
-| Backend testing | JUnit 5 and Spring Boot Test | Automated backend testing |
+| Backend language | Java | 21 |
+| Backend framework | Spring Boot | 4.1.2 |
+| Build | Maven | Maven project; requires a local Maven installation |
+| Persistence mapping | Spring Data JPA / Hibernate | Hibernate validates the mapped schema at startup |
+| Database | PostgreSQL | 18.7 verified locally |
+| Database migrations | Flyway with Spring Boot integration | 13.12.1 |
+| Frontend | React and TypeScript | React 19.3.1; TypeScript 7.0.2 |
+| Frontend tooling | Vite and npm | Vite declared as `^8.3.6` (lockfile resolves 8.3.8); Node.js 24 and npm 11 |
 
-The backend will follow the proposed Modular Monolith architecture. The frontend will be a separate application that communicates with the backend through a REST API. PostgreSQL will persist the application's data.
+These are project technology decisions, not client-imposed requirements. Spring Security/session authentication remains a proposed future capability and is not implemented.
 
-IntelliJ IDEA Community Edition will be used for backend development, and Visual Studio Code will be used for frontend development. Both are intended to be used with their respective free features.
+## Backend and persistence configuration
 
-### 4.2 Architectural Decisions
+The backend is under `backend/`; the frontend is under `frontend/`. PostgreSQL connection settings are supplied as `DB_URL`, `DB_USERNAME` and `DB_PASSWORD`. Defaults provide a local URL and role name; the password must be provided through the process environment or IDE run configuration. Spring Boot does not automatically load `.env` files. `.env.example` is a fictional reference only, and `.gitignore` excludes real `.env` files.
 
-The Modular Monolith remains the proposed architecture because it provides clear separation of responsibilities without the operational complexity of microservices. Authentication is proposed to use server-side sessions managed by Spring Security, consistent with the session cookie contract in `openapi.yaml`.
+Flyway reads versioned SQL from `classpath:db/migration`. V1 creates the five core tables and V2 inserts reproducible demonstration records. Flyway records successful migrations in `flyway_schema_history` and does not rerun them on ordinary restarts. Hibernate is configured with `ddl-auto=validate`, so it checks the mapped schema without creating or resetting it.
 
-The frontend and backend will be developed as separate parts of the same project, but the backend will remain a single deployable application. Project Management, Task Management, Progress Tracking, validation and access protection will be organised as internal responsibilities rather than independently deployed services.
+## Current boundaries and pending decisions
 
-### 4.3 Assumptions and Pending Decisions
+The current backend foundation includes JPA mappings, repository interfaces, database connection configuration and migrations. It does not implement authentication, project/task API workflows or corresponding frontend behavior. The frontend is a scaffold. Local backend startup and database connection, migration validation/application, Hibernate schema validation, frontend production build and development server have been verified. These checks do not establish application workflow or persistence constraint test coverage.
 
-The client brief confirms the need to organise projects, manage tasks and follow work progress. The expanded functionality is the Lab 03 course implementation target and is not additional client-confirmed scope.
-
-The following matters still require clarification or explicit implementation decisions:
-
-- Concrete session configuration and CSRF configuration.
-- Account lifecycle and required account attributes.
-- Whether project/task fields beyond the documented scope are needed; do not add fields without a decision.
-- Database schema and migration strategy, dependency versions, environment configuration and deployment arrangements.
-- Frontend test tooling and project-specific non-functional targets.
-
-The technology stack above is the current working proposal. Specific versions, session and CSRF configuration details, database migration approach and deployment arrangements remain to be established as implementation proceeds.
+The modular boundaries can support authentication, project management, task management, assignments, comments, search, filtering and dashboard responsibilities described in the project requirements. These are planned capabilities, not implemented modules or endpoints. Account lifecycle, session and CSRF configuration, deployment, and non-functional targets remain unresolved. Continue to distinguish client-confirmed needs from project decisions and open business rules.

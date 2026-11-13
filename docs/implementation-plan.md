@@ -1,10 +1,10 @@
-# Matriz — Implementation Plan (Lab 03)
+# Matriz — Implementation Plan
 
 ## 1. Purpose and Baseline
 
-This plan sequences implementation of the Lab 03 course scope documented in `docs/requirements.md`. The original client brief confirms only the high-level needs to organise projects, manage tasks and follow work progress. The detailed Lab 03 functionality and the working technical choices below are not additional client-confirmed requirements.
+This plan sequences implementation of the project scope documented in `docs/requirements.md`. The original client brief confirms only the high-level needs to organise projects, manage tasks and follow work progress. The detailed functionality and the working technical choices below are not additional client-confirmed requirements.
 
-The working architecture is a Modular Monolith with a Java/Spring Boot/Maven backend, React/TypeScript frontend using Vite and npm, PostgreSQL with Spring Data JPA, and Spring Security with server-side sessions. Backend tests use JUnit 5 and Spring Boot Test. These are proposed project decisions for the course. Versions, deployment configuration and some test tooling remain undecided.
+The selected architecture is a Modular Monolith with a Java 21/Spring Boot 4.1.2/Maven backend, React 19.3.1/TypeScript 7.0.2 frontend using Vite declared as `^8.3.6` (lockfile resolves 8.3.8) and npm 11, PostgreSQL 18.7 with Spring Data JPA, and Flyway 13.12.1. Session authentication remains proposed and unimplemented. The technical foundation and database persistence are implemented; deployment and some test tooling remain undecided.
 
 The plan covers authentication; project and task CRUD; task status (`TODO`, `IN_PROGRESS`, `DONE`, default `TODO`) and priority (`LOW`, `MEDIUM`, `HIGH`, default `MEDIUM`); multiple assignees; task comments; project-name search; task status/priority filters; and the dashboard with all projects and status-grouped task counts.
 
@@ -14,7 +14,7 @@ The following details remain open and must stay visible during planning. They do
 
 - **Account representation:** Confirm the login identifier, required account attributes and seed-account handling before finalizing the User persistence model and authentication setup.
 - **Project/task fields:** No additional fields beyond project name/description and task title/description/status/priority are specified. Do not add fields without a decision.
-- **Technical setup:** Confirm dependency/runtime versions, database migration approach, environment variables and deployment arrangements.
+- **Technical setup:** Runtime versions, migration strategy and environment variable names are selected. Hosting and deployment arrangements remain open.
 - **Session/security details:** Select concrete Spring Security session-cookie and CSRF configuration for the target environment.
 - **Frontend verification:** No frontend test tool is documented; decide whether one is needed before adding a dependency.
 - **Non-functional targets:** Performance, availability, backup, recovery and monitoring targets remain unspecified.
@@ -27,39 +27,39 @@ The following details remain open and must stay visible during planning. They do
 
 **Main tasks:**
 
-- Confirm required Java, Spring Boot, Node.js and package versions against course/environment constraints.
-- Set up the backend Maven project and install and initially configure the frontend React/TypeScript/Vite application with npm as parts of one project, keeping the backend as one deployable application.
+- Selected versions are Java 21, Spring Boot 4.1.2, PostgreSQL 18.7, Flyway 13.12.1, React 19.3.1, TypeScript 7.0.2, Vite declared as `^8.3.6` (lockfile resolves 8.3.8), Node.js 24 and npm 11.
+- Backend Maven project and frontend React/TypeScript/Vite scaffold are in place as parts of one project, with a single backend deployment.
 - Record local configuration needs and ensure secrets are supplied outside versioned documentation/source.
-- Establish a minimal build and startup check for each application part.
+- Backend startup, database connection, Flyway migration and schema validation, plus frontend development-server and production-build checks, have been completed.
 
-**Relevant files/modules:** `docs/architecture.md`; backend and frontend project files to be created during implementation (paths not yet established).
+**Relevant files/modules:** `docs/architecture.md`; `backend/` and `frontend/`.
 
 **Dependencies:** None.
 
-**Deliverables:** Buildable backend and frontend skeletons; documented local setup and configuration approach.
+**Deliverables:** Completed foundation: backend and frontend scaffolds and documented local setup/configuration.
 
-**Completion verification:** Backend Maven build and frontend npm build/start checks succeed in the intended environment; no application features are assumed complete.
+**Completion verification:** Backend startup and database connection, Flyway migrations and Hibernate schema validation were verified. Frontend development server and production build were verified. No business workflows are implied complete.
 
 ### Phase 2 — Database Configuration, Schema and Persistence
 
-**Objective:** Configure PostgreSQL persistence and implement the documented conceptual entities and relationships.
+**Objective:** Configure PostgreSQL persistence and implement the documented conceptual entities and relationships. **Status: completed for schema and startup foundation.**
 
 **Main tasks:**
 
-- Configure the application connection without committing credentials.
-- Implement `User`, `Project`, `Task`, `TaskAssignment` and `Comment` persistence based on `docs/database.md`.
-- Represent one project per task, many-to-many task assignments with a unique task/user pair, and task comments with one author and creation date.
-- Apply project name (3–150 characters) and optional description (maximum 2,000); task title (3–150), optional description (maximum 2,000), status and priority values/defaults; apply comment length and non-whitespace validation consistently at the application boundary as well as any suitable persistence constraints.
-- Choose and document a schema migration approach before schema changes accumulate.
-- Keep dashboard counts derived from task records; do not create a separate persisted count entity.
+- Configured the application connection using environment variables without committing credentials.
+- Implemented JPA mappings for `User`, `Project`, `Task`, `TaskAssignment` and `Comment` based on `docs/database.md`.
+- The schema represents one project per task, many-to-many task assignments with a unique task/user pair, and task comments with one author and creation date.
+- V1 applies project/task field lengths and status/priority constraints and defaults, comment length/non-whitespace constraints, foreign keys, delete behavior and indexes. Application-level validation remains future work.
+- Flyway is selected and documented; V1 creates the core schema and V2 inserts demonstration data.
+- The conceptual model does not require a separately persisted dashboard count entity.
 
-**Relevant files/modules:** `docs/database.md`; persistence/configuration and migration files to be established.
+**Relevant files/modules:** `docs/database.md`; `backend/src/main/resources/application.properties`, `backend/src/main/resources/db/migration/` and persistence packages under `backend/src/main/java/com/matriz/`.
 
-**Dependencies:** Phase 1; choose a schema/migration approach. Implement the approved project/task fields and rules from `docs/database.md`.
+**Dependencies:** Phase 1. The schema/migration approach and persistence mappings are implemented.
 
-**Deliverables:** Database configuration, schema/migrations, persistence mappings and focused persistence/constraint checks.
+**Deliverables:** Database configuration, V1/V2 migrations and persistence mappings. Persistence constraint tests and application-level integration tests are not verified as completed.
 
-**Completion verification:** Application connects to PostgreSQL; relationship and uniqueness checks behave as intended; validation boundary tests cover stated limits and defaults.
+**Completion verification:** PostgreSQL 18.7 connection verified; Flyway validated and applied both migrations and recorded successful history; Hibernate schema validation succeeded. Constraint and application-level integration tests remain pending.
 
 ### Phase 3 — Authentication and Current-User Handling
 
@@ -69,7 +69,7 @@ The following details remain open and must stay visible during planning. They do
 
 - Configure Spring Security for the proposed session-based approach and align cookie/CSRF settings with the chosen environment.
 - Implement login, logout and current-user behavior matching `/auth/login`, `/auth/logout` and `/auth/me` in `openapi.yaml`.
-- Use seeded demo accounts if needed for the documented course workflow; do not add public registration or password recovery to the required scope.
+- Demo records are present but have no usable login credentials. Account provisioning, registration and password recovery remain outside the implemented foundation.
 - Ensure ownership and comment authorship derive from the authenticated user rather than client-supplied identity fields.
 - Establish authentication tests for valid/invalid credentials, session invalidation, current identity and unauthenticated protected requests.
 
@@ -147,7 +147,7 @@ The following details remain open and must stay visible during planning. They do
 
 ### Phase 7 — Dashboard, Search and Filtering
 
-**Objective:** Deliver the Lab 03 overview and discovery features for the authenticated user across all projects.
+**Objective:** Deliver the project overview and discovery features for the authenticated user across all projects.
 
 **Main tasks:**
 
@@ -166,7 +166,7 @@ The following details remain open and must stay visible during planning. They do
 
 ### Phase 8 — Testing, Validation and Final Verification
 
-**Objective:** Verify that the integrated implementation meets the approved Lab 03 baseline and records any remaining limitations.
+**Objective:** Verify that the integrated implementation meets the documented project baseline and records any remaining limitations.
 
 **Main tasks:**
 
@@ -194,8 +194,8 @@ Project setup precedes backend and frontend work. Database/User persistence prec
 
 ## 5. Scope and Decision Notes
 
-- This plan follows the Lab 03 course implementation target and does not expand it. The original client-confirmed brief remains the three high-level needs described in `README.md` and `docs/requirements.md`.
+- This plan follows the documented project implementation target and does not expand it. The original client-confirmed brief remains the three high-level needs described in `README.md` and `docs/requirements.md`.
 - Public registration, password recovery, notifications, reporting, integrations and workflow automation are not included in this plan.
-- The existing wireframe is an earlier illustrative project-detail view, not the complete Lab 03 dashboard specification.
-- Implement the approved business rules as Lab 03 project decisions, not as client-confirmed requirements.
+- The existing wireframe is an earlier illustrative project-detail view, not the complete dashboard specification.
+- Implement the approved business rules as project decisions, not as client-confirmed requirements.
 - Keep account representation visible as an open decision; do not block unrelated implementation phases on it.
