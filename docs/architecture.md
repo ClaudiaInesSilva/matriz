@@ -14,6 +14,7 @@ The client brief confirms only the need to organise projects, manage tasks and f
 |---|---|---|
 | Backend language | Java | 21 |
 | Backend framework | Spring Boot | 4.1.2 |
+| Backend security | Spring Security | 7.1.2, managed by Spring Boot |
 | Build | Maven | Maven project; requires a local Maven installation |
 | Persistence mapping | Spring Data JPA / Hibernate | Hibernate validates the mapped schema at startup |
 | Database | PostgreSQL | 18.7 verified locally |
@@ -21,7 +22,7 @@ The client brief confirms only the need to organise projects, manage tasks and f
 | Frontend | React and TypeScript | React 19.3.1; TypeScript 7.0.2 |
 | Frontend tooling | Vite and npm | Vite declared as `^8.3.6` (lockfile resolves 8.3.8); Node.js 24 and npm 11 |
 
-These are project technology decisions, not client-imposed requirements. Spring Security/session authentication remains a proposed future capability and is not implemented.
+These are project technology decisions, not client-imposed requirements. The Spring Security filter chain, username/password authentication, CSRF token endpoint, login, current-user and logout endpoints are implemented. Protected requests require authentication by default, and the session cookie policy is configured.
 
 ## Backend and persistence configuration
 
@@ -31,6 +32,6 @@ Flyway reads versioned SQL from `classpath:db/migration`. V1 creates the five co
 
 ## Current boundaries and pending decisions
 
-The current backend foundation includes JPA mappings, repository interfaces, database connection configuration and migrations. It does not implement authentication, project/task API workflows or corresponding frontend behavior. The frontend is a scaffold. Local backend startup and database connection, migration validation/application, Hibernate schema validation, frontend production build and development server have been verified. These checks do not establish application workflow or persistence constraint test coverage.
+The current backend includes JPA mappings, repository interfaces, database connection configuration, migrations, the authentication API and project-management API operations. Project endpoints support authenticated listing, name search, viewing and creation, with owner-only updates and deletion; deletion is rejected while tasks remain. Task, assignment, comment and dashboard operations, and corresponding frontend behavior, are not implemented. The frontend is a scaffold. Local backend startup and database connection, migration validation/application, Hibernate schema validation, frontend production build and development server have been verified. Backend authentication/security and project-management behavior has MockMvc/unit test coverage; this does not establish persistence constraint test coverage.
 
-The modular boundaries can support authentication, project management, task management, assignments, comments, search, filtering and dashboard responsibilities described in the project requirements. These are planned capabilities, not implemented modules or endpoints. Account lifecycle, session and CSRF configuration, deployment, and non-functional targets remain unresolved. Continue to distinguish client-confirmed needs from project decisions and open business rules.
+The modular boundaries support the implemented project-management operations and can support task management, assignments, comments, filtering and dashboard responsibilities described in the project requirements. Authentication and project endpoints are implemented; the remaining domain operations are future work. Project-name search is included in project listing. The session policy is IF_REQUIRED with session-ID rotation and CSRF-token invalidation through the shared session authentication strategy. `GET /api/auth/csrf` returns the XOR handler-exposed token and its header name; clients send the token as `X-CSRF-TOKEN` for state-changing requests and obtain a fresh token after login and logout. The session cookie is named `JSESSIONID`, HttpOnly and SameSite=Lax; Secure defaults to true and is false only in the local profile. Account lifecycle, deployment and non-functional targets remain unresolved. Continue to distinguish client-confirmed needs from project decisions and open business rules.

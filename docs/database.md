@@ -31,11 +31,11 @@ Represents a user account that can authenticate and interact with Matriz.
 | Attribute | Key | Meaning and status |
 |---|---|---|
 | `user_id` | Primary key (PK) | Unique identifier for the user. |
-| `username` | Unique candidate | Identifier used to distinguish accounts. The final login identifier must be documented. |
+| `username` | Unique candidate | Selected login identifier for account authentication. |
 | `password_hash` | — | Password hash for local authentication. Plain-text passwords must not be stored. |
 | `display_name` | — | Name displayed in the interface and alongside comments and assignments. |
 
-The account model supports login, logout and retrieval of the current authenticated user. Public registration and password recovery are optional and are not required for the initial implementation. Demo accounts may be created using a seed.
+The account model supports login, logout and retrieval of the current authenticated user. Public registration and password recovery are optional and are not required for the initial implementation. V2 seeds the reserved demo usernames `demo.alex` and `demo.sam`; the separate local provisioning command targets these same accounts. Broader account lifecycle decisions remain unresolved.
 
 ### Project — project entity
 
@@ -271,14 +271,14 @@ The conceptual entities are implemented in PostgreSQL by versioned Flyway migrat
 
 | Table | Implemented representation and constraints |
 |---|---|
-| `users` | UUID primary key; unique non-null `username` (100); nullable `password_hash` (255); non-null `display_name` (150). Demo accounts have null password hashes. |
+| `users` | UUID primary key; unique non-null `username` (100); non-null `password_hash` (255); non-null `display_name` (150). V3 replaces null password values and the demo accounts' credentials with the non-authenticating `!DISABLED!` marker before enforcing `NOT NULL`. |
 | `projects` | UUID primary key; non-null name (3–150 characters); nullable description (up to 2,000); required owner FK with deletion restricted. |
 | `tasks` | UUID primary key; required project and creator FKs, both deletion restricted; title (3–150); optional description (up to 2,000); status constrained to `TODO`, `IN_PROGRESS`, `DONE` with `TODO` default; priority constrained to `LOW`, `MEDIUM`, `HIGH` with `MEDIUM` default. |
 | `task_assignments` | Task and user FKs; composite primary key `(task_id, user_id)` prevents duplicates; task deletion cascades and user deletion is restricted. |
 | `comments` | UUID primary key; task and author FKs; content length 1–2,000 and non-whitespace constraint; required `TIMESTAMPTZ`; task deletion cascades and author deletion is restricted. |
 
-Indexes are created for `tasks.project_id`, `task_assignments.user_id` and `comments.task_id`. The migration schema encodes structural constraints; it does not implement application authorization, authentication or API workflows. Account identifier/lifecycle and client-facing validation behavior remain unresolved. The project deletion rule is supported by the restrictive task foreign key; application-specific conflict responses are not implemented.
+Indexes are created for `tasks.project_id`, `task_assignments.user_id` and `comments.task_id`. The migration schema encodes structural constraints; it does not implement application authorization, authentication or API workflows. The application implements session authentication and project operations, including owner checks and a conflict response when tasks prevent project deletion. `username` is the selected login identifier. Account lifecycle and client-facing validation behavior remain unresolved.
 
-V2 seeds two users (`demo.alex`, `demo.sam`), two projects owned by different users, two tasks, two cross-owner assignments and one comment. Seed inserts use fixed identifiers and conflict-safe inserts. These records support local inspection and persistence startup verification; they are not usable login accounts.
+V2 seeds two users (`demo.alex`, `demo.sam`), two projects owned by different users, two tasks, two cross-owner assignments and one comment. These exact usernames are reserved for the demo accounts; the local provisioner targets the same pair. Seed inserts use fixed identifiers and conflict-safe inserts. V3 disables both demo accounts in every environment where the migration runs; it contains no usable password hashes. A separate provisioning entry point, restricted to the local profile and loopback PostgreSQL URLs, prompts for local-only passwords and stores BCrypt hashes. Ordinary application startup does not provision demo credentials. The demo-account authentication flag applies only to these reserved names; other accounts with usable BCrypt hashes remain governed by their own credentials. Authentication must reject missing, malformed and disabled-marker values.
 
-Flyway validated and applied both migrations to a local PostgreSQL 18.7 database, and its history table recorded both as successful. Hibernate schema validation also succeeded. These checks do not establish that persistence constraint tests or application-level integration tests have passed.
+Flyway previously validated and applied V1 and V2 to a local PostgreSQL 18.7 database, and its history table recorded both as successful. V3 has been added but was not applied during this change; the existing local database remains at its prior migration state until a later normal startup applies it. Hibernate schema validation of V3 and the updated mapping has not been performed. These checks do not establish that persistence constraint tests or application-level integration tests have passed.

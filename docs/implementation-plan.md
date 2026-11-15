@@ -4,7 +4,7 @@
 
 This plan sequences implementation of the project scope documented in `docs/requirements.md`. The original client brief confirms only the high-level needs to organise projects, manage tasks and follow work progress. The detailed functionality and the working technical choices below are not additional client-confirmed requirements.
 
-The selected architecture is a Modular Monolith with a Java 21/Spring Boot 4.1.2/Maven backend, React 19.3.1/TypeScript 7.0.2 frontend using Vite declared as `^8.3.6` (lockfile resolves 8.3.8) and npm 11, PostgreSQL 18.7 with Spring Data JPA, and Flyway 13.12.1. Session authentication remains proposed and unimplemented. The technical foundation and database persistence are implemented; deployment and some test tooling remain undecided.
+The selected architecture is a Modular Monolith with a Java 21/Spring Boot 4.1.2/Maven backend, Spring Security 7.1.2, React 19.3.1/TypeScript 7.0.2 frontend using Vite declared as `^8.3.6` (lockfile resolves 8.3.8) and npm 11, PostgreSQL 18.7 with Spring Data JPA, and Flyway 13.12.1. The Spring Security protected-defaults foundation is implemented; login/logout/current-user behavior remains unimplemented. The technical foundation and database persistence are implemented; deployment and some test tooling remain undecided.
 
 The plan covers authentication; project and task CRUD; task status (`TODO`, `IN_PROGRESS`, `DONE`, default `TODO`) and priority (`LOW`, `MEDIUM`, `HIGH`, default `MEDIUM`); multiple assignees; task comments; project-name search; task status/priority filters; and the dashboard with all projects and status-grouped task counts.
 
@@ -12,10 +12,10 @@ The plan covers authentication; project and task CRUD; task status (`TODO`, `IN_
 
 The following details remain open and must stay visible during planning. They do not block work that can proceed without them, and they are not client-confirmed requirements:
 
-- **Account representation:** Confirm the login identifier, required account attributes and seed-account handling before finalizing the User persistence model and authentication setup.
+- **Account representation:** `username` is the selected login identifier and the two demo accounts have explicit local-only provisioning. Registration, recovery and the wider account lifecycle remain outside the current implementation.
 - **Project/task fields:** No additional fields beyond project name/description and task title/description/status/priority are specified. Do not add fields without a decision.
 - **Technical setup:** Runtime versions, migration strategy and environment variable names are selected. Hosting and deployment arrangements remain open.
-- **Session/security details:** Select concrete Spring Security session-cookie and CSRF configuration for the target environment.
+- **Session/security details:** Spring Security 7.1.2, session and CSRF settings, and secure-cookie defaults are selected and implemented. Account lifecycle, hosting/deployment and non-functional targets remain open.
 - **Frontend verification:** No frontend test tool is documented; decide whether one is needed before adding a dependency.
 - **Non-functional targets:** Performance, availability, backup, recovery and monitoring targets remain unspecified.
 
@@ -61,33 +61,38 @@ The following details remain open and must stay visible during planning. They do
 
 **Completion verification:** PostgreSQL 18.7 connection verified; Flyway validated and applied both migrations and recorded successful history; Hibernate schema validation succeeded. Constraint and application-level integration tests remain pending.
 
-### Phase 3 — Authentication and Current-User Handling
+### Phase 3 — Authentication and Current-User Handling — Completed
 
 **Objective:** Establish server-side session authentication and a trusted current-user identity for protected operations.
 
+**Status:** Completed for backend authentication endpoints and authentication/session/CSRF tests. Resource-specific identity use and authorization remain part of Phases 4–6.
+
 **Main tasks:**
 
-- Configure Spring Security for the proposed session-based approach and align cookie/CSRF settings with the chosen environment.
-- Implement login, logout and current-user behavior matching `/auth/login`, `/auth/logout` and `/auth/me` in `openapi.yaml`.
-- Demo records are present but have no usable login credentials. Account provisioning, registration and password recovery remain outside the implemented foundation.
-- Ensure ownership and comment authorship derive from the authenticated user rather than client-supplied identity fields.
+- Build on the protected-defaults foundation in `com.matriz.security`; implement login and current-user behavior matching `/auth/login` and `/auth/me`, and configure the Spring Security logout filter for `POST /auth/logout` with a `204` success response and `401` for unauthenticated requests.
+- Demo records have no usable credentials unless provisioned locally through the separate local-only process. Registration and password recovery remain outside the implemented foundation.
+- The authentication principal exposes the caller's identity for Phases 4–6; project ownership, task authorship and comment authorship must derive from this principal when those operations are implemented.
 - Establish authentication tests for valid/invalid credentials, session invalidation, current identity and unauthenticated protected requests.
+- Treat `demo.alex` and `demo.sam` as reserved demo usernames; test that the disabled-demo policy still permits a non-demo username with a valid BCrypt hash.
+- Test the complete logout behavior through MockMvc and the configured security filter chain, including unauthenticated 401 behavior and obtaining and using a fresh CSRF token after logout.
 
 **Relevant files/modules:** Authentication and security modules; `openapi.yaml` Authentication paths; `database.md` User entity.
 
-**Dependencies:** Phases 1–2, including a usable User persistence model and the account identifier decision.
+**Dependencies:** Phases 1–2, including the User persistence model and selected `username` login identifier.
 
 **Deliverables:** Working session authentication, current-user endpoint and authentication test coverage.
 
 **Completion verification:** API checks confirm session establishment, current-user identity, logout invalidation and rejection of unauthenticated protected calls without exposing sensitive details.
 
-### Phase 4 — Backend Modules and REST API
+### Phase 4 — Backend Modules and REST API — Project Management Completed
 
 **Objective:** Implement the project/task domain operations and their dependent assignments and comments through the documented REST contract.
 
+**Status:** Project listing, name search, viewing, creation, owner-only updates and owner-only deletion are implemented and covered by backend API tests. Task, assignment and comment operations remain pending for their respective implementation stages.
+
 **Main tasks:**
 
-- Implement project create/list/view/edit/delete operations and task create/list/view/edit/delete operations.
+- Implement project create/list/view/edit/delete operations and task create/list/view/edit/delete operations. Project operations and project-name search are complete; task operations remain pending.
 - Apply approved authorization checks: all authenticated users can list/view/create projects; only the owner edits/deletes a project; all authenticated users create/view/update tasks; only the owner or task creator deletes a task; all authenticated users view/add comments.
 - Enforce task status and priority values/defaults and the task validation limits.
 - Implement the eligible-user listing operation (`GET /projects/{projectId}/eligible-assignees`) to return existing accounts. Any existing account is eligible regardless of project ownership.
@@ -100,7 +105,7 @@ The following details remain open and must stay visible during planning. They do
 
 **Dependencies:** Phases 2–3. Approved permission, eligibility and dependent-record rules are documented.
 
-**Deliverables:** Backend operations for projects, tasks, assignments and comments with API-level tests.
+**Deliverables:** Project operations with API-level tests are complete. Backend operations for tasks, assignments and comments remain outstanding.
 
 **Completion verification:** Each operation has successful and relevant failure-path checks; unauthenticated requests are rejected and owner/creator restrictions are enforced only for the specified project/task mutations.
 

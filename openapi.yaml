@@ -13,6 +13,10 @@ info:
     and business rules in this contract are proposed implementation decisions
     or course requirements, not additional client-confirmed requirements.
 
+    Every state-changing request requires the X-CSRF-TOKEN header. Obtain its
+    BREACH-protected value from GET /auth/csrf and obtain a fresh token after
+    login and logout.
+
 servers:
   - url: http://localhost:8080/api
     description: Local development server
@@ -27,6 +31,22 @@ tags:
 
 paths:
 
+  /auth/csrf:
+    get:
+      tags:
+        - Authentication
+      summary: Get a CSRF token
+      description: Returns the BREACH-protected token exposed by the configured CSRF request handler.
+      operationId: getCsrfToken
+      security: []
+      responses:
+        '200':
+          description: CSRF token for subsequent state-changing requests.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsrfToken'
+
   /auth/login:
     post:
       tags:
@@ -35,6 +55,8 @@ paths:
       description: Authenticates a user and creates a server-side session.
       operationId: login
       security: []
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         required: true
         content:
@@ -57,6 +79,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: CSRF token is missing or invalid.
 
   /auth/logout:
     post:
@@ -65,11 +89,15 @@ paths:
       summary: Log out
       description: Invalidates the current server-side session.
       operationId: logout
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       responses:
         '204':
           description: Logout successful.
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: CSRF token is missing or invalid.
 
   /auth/me:
     get:
@@ -124,6 +152,8 @@ paths:
       summary: Create project
       description: Creates a project. Any authenticated user may create one; the backend records the caller as owner. Name is required (3–150 characters); description is optional (maximum 2,000).
       operationId: createProject
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         required: true
         content:
@@ -170,6 +200,8 @@ paths:
       summary: Update project
       description: Replaces editable project details. Only the project owner may update it.
       operationId: updateProject
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         required: true
         content:
@@ -200,6 +232,8 @@ paths:
         Only the project owner may delete a project. A project cannot be
         deleted while it contains tasks; in that case the response is 409.
       operationId: deleteProject
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       responses:
         '204':
           description: Project deleted.
@@ -260,6 +294,8 @@ paths:
         defaults to MEDIUM. Title is required (3–150 characters); description
         is optional (maximum 2,000 characters).
       operationId: createProjectTask
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         required: true
         content:
@@ -308,6 +344,8 @@ paths:
       summary: Update task
       description: Any authenticated user may update a task in any project, subject to task field validation.
       operationId: updateTask
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         required: true
         content:
@@ -334,6 +372,8 @@ paths:
       summary: Delete task
       description: Only the project owner or task creator may delete the task. Deletion also removes its task-assignment and comment records.
       operationId: deleteTask
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       responses:
         '204':
           description: Task deleted.
@@ -400,6 +440,8 @@ paths:
         A user cannot be assigned to the same task more than once.
         Any authenticated user may add an assignment.
       operationId: assignUserToTask
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         required: true
         content:
@@ -432,6 +474,8 @@ paths:
       summary: Remove task assignee
       description: Any authenticated user may remove the specified task/user assignment.
       operationId: removeTaskAssignee
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       responses:
         '204':
           description: Assignment removed.
@@ -471,6 +515,8 @@ paths:
         Adds a comment to the task. The backend derives the author from
         the authenticated session; the client cannot supply the author.
       operationId: addTaskComment
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         required: true
         content:
@@ -522,10 +568,17 @@ components:
       name: JSESSIONID
       description: |
         Server-managed session cookie established at login.
-        The actual cookie name and CSRF configuration must match
-        the Spring Security implementation.
+        The cookie is named JSESSIONID, HttpOnly and SameSite=Lax. Secure is
+        enabled by default and disabled only by the local development profile.
 
   parameters:
+    CsrfToken:
+      name: X-CSRF-TOKEN
+      in: header
+      required: true
+      description: BREACH-protected token returned by GET /auth/csrf.
+      schema:
+        type: string
     ProjectId:
       name: projectId
       in: path
@@ -540,6 +593,19 @@ components:
         type: string
 
   schemas:
+
+    CsrfToken:
+      type: object
+      required:
+        - token
+        - headerName
+      properties:
+        token:
+          type: string
+          description: BREACH-protected token exposed by Spring Security's XOR request handler.
+        headerName:
+          type: string
+          const: X-CSRF-TOKEN
 
     LoginRequest:
       type: object

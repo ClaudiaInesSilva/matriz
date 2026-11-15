@@ -153,7 +153,7 @@ Lab 03 defines the minimum functional scope, but some business rules and impleme
 
 ### 7.2 Authentication and Access Control
 
-- How are demo user accounts represented, and which account attributes are required?
+- The login identifier is `username`. The exact usernames `demo.alex` and `demo.sam` are reserved for local-only demonstration accounts. Account lifecycle decisions beyond these accounts remain unresolved.
 - Are comment editing and deletion needed in a later extension? They are not part of the Lab 03 required scope.
 
 ### 7.3 Validation and Error Handling
@@ -176,7 +176,7 @@ This document preserves the original client brief and incorporates the minimum f
 
 The original client-confirmed need remains to organise projects, manage tasks and follow work progress. The expanded functionality in Sections 4 and 6 is included to satisfy the practical exercise and should not be interpreted as independent confirmation of every detail by the client.
 
-The project decisions for permissions, assignment eligibility, dependent-record deletion, project search, task filters, dashboard counts, specified validation rules and the technical foundation are recorded in this document and `docs/architecture.md`. Remaining questions concern account representation, any additional fields, deployment, and future test coverage; these are not client-confirmed requirements.
+The project decisions for permissions, assignment eligibility, dependent-record deletion, project search, task filters, dashboard counts, specified validation rules, the `username` login identifier and technical foundation are recorded in this document and `docs/architecture.md`. Remaining questions concern account lifecycle, any additional fields, deployment, and future test coverage; these are not client-confirmed requirements.
 
 The selected Modular Monolith architecture and technology stack are documented in `docs/architecture.md`. The database model, API contract, user stories, wireframe and implementation plan should remain consistent with this scope.
 

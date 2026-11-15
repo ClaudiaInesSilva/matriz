@@ -23,4 +23,32 @@ public class Project {
     private UUID ownerId;
 
     protected Project() {}
+
+    public Project(UUID id, String name, String description, UUID ownerId) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.ownerId = ownerId;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public UUID getOwnerId() {
+        return ownerId;
+    }
+
+    public void updateDetails(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
 }
