@@ -2,6 +2,7 @@ package com.matriz.assignments;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
@@ -14,7 +15,21 @@ public class TaskAssignmentId implements Serializable {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    protected TaskAssignmentId() {}
+    protected TaskAssignmentId() {
+    }
+
+    public TaskAssignmentId(UUID taskId, UUID userId) {
+        this.taskId = taskId;
+        this.userId = userId;
+    }
+
+    public UUID getTaskId() {
+        return taskId;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
 
     @Override
     public boolean equals(Object other) {
@@ -24,5 +39,7 @@ public class TaskAssignmentId implements Serializable {
     }
 
     @Override
-    public int hashCode() { return Objects.hash(taskId, userId); }
+    public int hashCode() {
+        return Objects.hash(taskId, userId);
+    }
 }

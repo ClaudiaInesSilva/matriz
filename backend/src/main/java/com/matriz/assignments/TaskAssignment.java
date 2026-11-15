@@ -10,5 +10,14 @@ public class TaskAssignment {
     @EmbeddedId
     private TaskAssignmentId id;
 
-    protected TaskAssignment() {}
+    protected TaskAssignment() {
+    }
+
+    public TaskAssignment(TaskAssignmentId id) {
+        this.id = id;
+    }
+
+    public TaskAssignmentId getId() {
+        return id;
+    }
 }
