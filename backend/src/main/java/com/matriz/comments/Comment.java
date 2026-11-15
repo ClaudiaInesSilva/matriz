@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -26,5 +27,34 @@ public class Comment {
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
-    protected Comment() {}
+    protected Comment() {
+    }
+
+    public Comment(UUID id, UUID taskId, UUID authorId, String content, OffsetDateTime createdAt) {
+        this.id = id;
+        this.taskId = taskId;
+        this.authorId = authorId;
+        this.content = content;
+        this.createdAt = createdAt;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getTaskId() {
+        return taskId;
+    }
+
+    public UUID getAuthorId() {
+        return authorId;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
 }
