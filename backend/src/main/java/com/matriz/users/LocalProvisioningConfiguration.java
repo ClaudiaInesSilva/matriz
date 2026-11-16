@@ -18,6 +18,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EntityScan(basePackageClasses = User.class)
 @EnableJpaRepositories(basePackageClasses = UserRepository.class)
 @Import(LocalDemoAccountProvisioner.class)
+@Profile("local")
 public class LocalProvisioningConfiguration {
     @Bean(destroyMethod = "close")
     @Profile("local")

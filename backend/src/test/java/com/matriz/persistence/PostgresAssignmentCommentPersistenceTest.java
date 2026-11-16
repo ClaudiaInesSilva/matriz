@@ -146,7 +146,7 @@ class PostgresAssignmentCommentPersistenceTest {
         assertThat(JsonPath.<String>read(commentsJson, "$[0].content")).isEqualTo(content);
         assertThat(UUID.fromString(JsonPath.read(commentsJson, "$[0].author.userId"))).isEqualTo(author.id());
         assertThat(OffsetDateTime.parse(JsonPath.<String>read(commentsJson, "$[0].createdAt")))
-                .isEqualTo(creationTime.truncatedTo(ChronoUnit.MICROS));
+                .isEqualTo(creationTime.plusNanos(500).truncatedTo(ChronoUnit.MICROS));
     }
 
     private TestUser createUser(String displayName) {
