@@ -1,121 +1,151 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useCallback, useEffect, useState } from 'react'
+import { useAuth } from './auth/useAuth'
+import { Feedback } from './components/Feedback'
+import { DashboardPage } from './pages/DashboardPage'
+import { LoginPage } from './pages/LoginPage'
+import { ProjectPage } from './pages/ProjectPage'
+import { TaskPage } from './pages/TaskPage'
 import './App.css'
 
+type Route =
+  | { page: 'dashboard' }
+  | { page: 'project'; projectId: string }
+  | { page: 'task'; taskId: string }
+
+function getRoute(hash: string): Route {
+  const segments = hash.replace(/^#\/?/, '').split('/').filter(Boolean)
+  try {
+    if (segments.length === 2 && segments[0] === 'projects') {
+      return { page: 'project', projectId: decodeURIComponent(segments[1]) }
+    }
+    if (segments.length === 2 && segments[0] === 'tasks') {
+      return { page: 'task', taskId: decodeURIComponent(segments[1]) }
+    }
+  } catch {
+    return { page: 'dashboard' }
+  }
+  return { page: 'dashboard' }
+}
+
 function App() {
-  const [count, setCount] = useState(0)
+  const { status, user, error, signOut, checkSession } = useAuth()
+  const [logoutError, setLogoutError] = useState<string | null>(null)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [route, setRoute] = useState<Route>(() => getRoute(window.location.hash))
+  const [revision, setRevision] = useState(0)
+
+  useEffect(() => {
+    function syncRoute() {
+      setRoute(getRoute(window.location.hash))
+    }
+    window.addEventListener('hashchange', syncRoute)
+    return () => window.removeEventListener('hashchange', syncRoute)
+  }, [])
+
+  const onDataChanged = useCallback(() => setRevision((value) => value + 1), [])
+  const onUnauthorized = useCallback(() => {
+    void checkSession()
+  }, [checkSession])
+
+  async function handleLogout() {
+    setLogoutError(null)
+    setIsLoggingOut(true)
+
+    try {
+      await signOut()
+    } catch {
+      setLogoutError('Unable to log out. Please try again.')
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
+
+  if (status === 'loading') {
+    return (
+      <main className="page-shell">
+        <p className="loading-message" role="status">
+          Checking your session...
+        </p>
+      </main>
+    )
+  }
+
+  if (status === 'error') {
+    return (
+      <main className="page-shell">
+        <section className="message-card" aria-labelledby="connection-title">
+          <div className="brand" aria-label="Matriz">
+            <span className="brand-mark" aria-hidden="true">M</span>
+            <span>Matriz</span>
+          </div>
+          <h1 id="connection-title">Can't connect to Matriz</h1>
+          <p className="form-error" role="alert">
+            {error ?? 'Please check that the backend is running and try again.'}
+          </p>
+          <button className="button button-primary" type="button" onClick={() => void checkSession()}>
+            Try again
+          </button>
+        </section>
+      </main>
+    )
+  }
+
+  if (status === 'unauthenticated' || !user) {
+    return <LoginPage />
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="app-shell">
+      <header className="app-header">
+        <a className="brand brand-link" href="#/" aria-label="Matriz — painel">
+          <span className="brand-mark" aria-hidden="true">M</span>
+          <span>Matriz</span>
+        </a>
+        <nav className="main-nav" aria-label="Navegação principal">
+          <a className={route.page === 'dashboard' ? 'nav-link active' : 'nav-link'} href="#/">Painel</a>
+        </nav>
+        <div className="user-actions">
+          <div className="user-identity">
+            <span className="user-name">{user.displayName}</span>
+            <span className="user-username">{user.username}</span>
+          </div>
+          <button
+            className="button button-secondary"
+            type="button"
+            onClick={() => void handleLogout()}
+            disabled={isLoggingOut}
+          >
+            {isLoggingOut ? 'A terminar sessão…' : 'Terminar sessão'}
+          </button>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      </header>
+      <main className="app-content">
+        {logoutError && <Feedback>{logoutError}</Feedback>}
+        {route.page === 'dashboard' ? (
+          <DashboardPage
+            user={user}
+            revision={revision}
+            onDataChanged={onDataChanged}
+            onUnauthorized={onUnauthorized}
+          />
+        ) : route.page === 'project' ? (
+          <ProjectPage
+            projectId={route.projectId}
+            userId={user.userId}
+            revision={revision}
+            onDataChanged={onDataChanged}
+            onUnauthorized={onUnauthorized}
+          />
+        ) : (
+          <TaskPage
+            taskId={route.taskId}
+            revision={revision}
+            onDataChanged={onDataChanged}
+            onUnauthorized={onUnauthorized}
+          />
+        )}
+      </main>
+    </div>
   )
 }
 
