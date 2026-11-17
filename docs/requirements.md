@@ -7,7 +7,7 @@ Matriz is a project and task management application intended for work teams with
 
 The initial client description establishes these three needs but does not define all the detailed functionalities or business rules. This document therefore distinguishes confirmed needs from proposed requirements and assumptions.
 
-**Confirmed by the client brief:** teams need an application to organise projects, manage tasks and follow work progress. All detailed functionality below is a proposal for the course exercise, not a confirmed client commitment.
+**Confirmed by the client brief:** teams need an application to organise projects, manage tasks and follow work progress. All detailed functionality below is proposed functionality for Matriz, not an additional client-confirmed commitment.
 
 ## 2. Objectives
 
@@ -26,8 +26,8 @@ The main objectives of Matriz are to:
 A team member participates in projects and performs tasks.
 
 Proposed needs:
-- View all projects and their tasks under the Lab 03 course implementation decisions.
-- Create and edit tasks under the Lab 03 course implementation decisions.
+- View all projects and their tasks under the documented Matriz project decisions.
+- Create and edit tasks under the documented Matriz project decisions.
 - Update task status.
 - Follow project progress.
 
@@ -45,23 +45,23 @@ Proposed needs:
 
 ## 4. Functional Requirements
 
-The original client brief establishes the need to organise projects, manage tasks and follow work progress. The requirements below incorporate the minimum functional scope specified in Lab 03 for implementation.
+The original client brief establishes the need to organise projects, manage tasks and follow work progress. The requirements below define the current Matriz implementation scope.
 
-The Lab 03 scope extends the earlier proposed MVP. Its additional functionality is included to satisfy the practical exercise and should not be interpreted as evidence that the client independently requested or validated every detail.
+This scope extends the earlier proposed MVP with project implementation decisions. These additions should not be interpreted as evidence that the client independently requested or validated every detail.
 
 | ID | Requirement | Priority | Source / Status |
 |---|---|---|---|
-| FR01 | Any authenticated user shall be able to create a project; its creator is its owner. | Essential | Lab 03 course implementation decision |
-| FR02 | Any authenticated user shall be able to list and view all projects. | Essential | Lab 03 course implementation decision |
-| FR03 | Only a project's owner shall be able to edit or delete it; deletion is rejected with HTTP 409 while the project contains tasks. | Essential | Lab 03 course implementation decision |
-| FR04 | Any authenticated user shall be able to create, view and update tasks in any project. Only the project owner or task creator may delete a task. | Essential | Lab 03 course implementation decision |
-| FR05 | Each task shall belong to a valid project and have a status and priority. Status values are `TODO`, `IN_PROGRESS`, `DONE` (default `TODO`); priority values are `LOW`, `MEDIUM`, `HIGH` (default `MEDIUM`). | Essential | Lab 03 course implementation decision |
-| FR06 | Any authenticated user may add or remove task assignments. Any existing user account may be assigned; multiple assignments are allowed, duplicate task/user assignments are prohibited, and project ownership is not required for eligibility. | Essential | Lab 03 course implementation decision |
-| FR07 | Any authenticated user shall be able to view and add task comments; each comment records its authenticated author and creation date. | Essential | Lab 03 course implementation decision |
-| FR08 | The application shall allow users to log in, log out and retrieve the identity of the currently authenticated user. | Essential | Lab 03 minimum scope |
-| FR09 | The application shall allow authenticated users to search all projects by name, using case-insensitive partial matching after trimming query whitespace; an empty or omitted query returns all projects. | Essential | Lab 03 course implementation decision |
-| FR10 | The application shall allow tasks to be filtered by status and priority. Omitted filters do not restrict results; when both are supplied, both conditions must match. | Essential | Lab 03 course implementation decision |
-| FR11 | The dashboard shall display all projects and counts across their tasks for each of `TODO`, `IN_PROGRESS` and `DONE`, including zero counts. Counts include all priorities and assignees. | Essential | Lab 03 course implementation decision |
+| FR01 | Any authenticated user shall be able to create a project; its creator is its owner. | Essential | Matriz project decision |
+| FR02 | Any authenticated user shall be able to list and view all projects. | Essential | Matriz project decision |
+| FR03 | Only a project's owner shall be able to edit or delete it; deletion is rejected with HTTP 409 while the project contains tasks. | Essential | Matriz project decision |
+| FR04 | Any authenticated user shall be able to create, view and update tasks in any project. Only the project owner or task creator may delete a task. | Essential | Matriz project decision |
+| FR05 | Each task shall belong to a valid project and have a status and priority. Status values are `TODO`, `IN_PROGRESS`, `DONE` (default `TODO`); priority values are `LOW`, `MEDIUM`, `HIGH` (default `MEDIUM`). | Essential | Matriz project decision |
+| FR06 | Any authenticated user may add or remove task assignments. Any existing user account may be assigned; multiple assignments are allowed, duplicate task/user assignments are prohibited, and project ownership is not required for eligibility. | Essential | Matriz project decision |
+| FR07 | Any authenticated user shall be able to view and add task comments; each comment records its authenticated author and creation date. | Essential | Matriz project decision |
+| FR08 | The application shall allow users to log in, log out and retrieve the identity of the currently authenticated user. | Essential | Matriz implementation scope |
+| FR09 | The application shall allow authenticated users to search all projects by name, using case-insensitive partial matching after trimming query whitespace; an empty or omitted query returns all projects. | Essential | Matriz project decision |
+| FR10 | The application shall allow tasks to be filtered by status and priority. Omitted filters do not restrict results; when both are supplied, both conditions must match. | Essential | Matriz project decision |
+| FR11 | The dashboard shall display all projects and counts across their tasks for each of `TODO`, `IN_PROGRESS` and `DONE`, including zero counts. Counts include all priorities and assignees. | Essential | Matriz project decision |
 
 Public registration and password recovery are optional extensions and are not part of the required implementation scope. Demo accounts may be created using a database seed.
 
@@ -80,7 +80,7 @@ Public registration and password recovery are optional extensions and are not pa
 - Dashboard counts are derived from tasks across all projects and include all statuses, including zero, regardless of task priority or assignee. Do not calculate percentages or add charts/advanced analytics.
 - Invalid input and unauthorised operations must be handled without creating inconsistent records or exposing protected data.
 
-These are Lab 03 course implementation decisions, not requirements independently confirmed by the original client. Comment editing/deletion is outside the required scope.
+These are Matriz project decisions, not requirements independently confirmed by the original client. Comment editing/deletion is outside the current implementation scope.
 
 ## 5. Non-Functional Requirements
 
@@ -99,9 +99,9 @@ Specific performance targets, availability requirements, accessibility standards
 
 ## 6. MVP Scope
 
-The original proposed MVP focused on basic project management, task management, task status updates and progress visibility. Lab 03 expands this scope and defines the minimum functionality to be implemented in the practical exercise.
+The original proposed MVP focused on basic project management, task management, task status updates and progress visibility. The current project scope expands this baseline with the authentication, assignment, comment, search, filtering and dashboard behavior described below.
 
-The scope below is the **Lab 03 implementation target**. It does not imply that every feature was independently requested or validated by the original client.
+The scope below is the **current Matriz implementation target**. It does not imply that every feature was independently requested or validated by the original client.
 
 ### 6.1 Required Implementation Scope
 
@@ -126,7 +126,7 @@ Demo accounts may be created through a database seed to support authentication a
 
 ### 6.3 Out of Scope for the Initial Implementation
 
-Unless required by a later exercise or explicitly approved, the following are outside the current implementation scope:
+Unless required by a later approved project decision, the following are outside the current implementation scope:
 
 - Notifications and automated reminders.
 - Advanced reporting and analytics.
@@ -139,13 +139,13 @@ Basic authentication, authorisation, input validation and protection of project 
 
 ### 6.4 Scope and Validation Notes
 
-The Lab 03 functional scope takes precedence as the implementation target for this practical exercise. The original client brief remains the source of the application's high-level purpose.
+The current implementation scope is the project baseline for this work. The original client brief remains the source of the application's high-level purpose.
 
 The project implementation decisions above are not client-confirmed requirements. Remaining matters such as account representation and comment editing/deletion must remain explicit; do not infer additional business rules. Selected technical decisions are documented in `docs/architecture.md`.
 
 ## 7. Open Questions
 
-Lab 03 defines the minimum functional scope, but some business rules and implementation details remain unspecified. The following questions must be resolved or documented as explicit implementation decisions before the affected functionality is developed.
+The current implementation scope includes proposed behavior and some unresolved business rules. The following questions must be resolved or documented as explicit implementation decisions before the affected functionality is changed.
 
 ### 7.1 Project and Task Rules
 
@@ -154,7 +154,7 @@ Lab 03 defines the minimum functional scope, but some business rules and impleme
 ### 7.2 Authentication and Access Control
 
 - The login identifier is `username`. The exact usernames `demo.alex` and `demo.sam` are reserved for local-only demonstration accounts. Account lifecycle decisions beyond these accounts remain unresolved.
-- Are comment editing and deletion needed in a later extension? They are not part of the Lab 03 required scope.
+- Are comment editing and deletion needed in a later extension? They are not part of the current implementation scope.
 
 ### 7.3 Validation and Error Handling
 
@@ -172,12 +172,12 @@ Decisions made to resolve the remaining questions must be documented in the rele
 
 ## 8. Current Status
 
-This document preserves the original client brief and incorporates the minimum functional scope specified in Lab 03 as the implementation target.
+This document preserves the original client brief and describes the current Matriz implementation scope.
 
-The original client-confirmed need remains to organise projects, manage tasks and follow work progress. The expanded functionality in Sections 4 and 6 is included to satisfy the practical exercise and should not be interpreted as independent confirmation of every detail by the client.
+The original client-confirmed need remains to organise projects, manage tasks and follow work progress. The expanded functionality in Sections 4 and 6 is proposed project scope and should not be interpreted as independent confirmation of every detail by the client.
 
 The project decisions for permissions, assignment eligibility, dependent-record deletion, project search, task filters, dashboard counts, specified validation rules, the `username` login identifier and technical foundation are recorded in this document and `docs/architecture.md`. Remaining questions concern account lifecycle, any additional fields, deployment, and future test coverage; these are not client-confirmed requirements.
 
 The selected Modular Monolith architecture and technology stack are documented in `docs/architecture.md`. The database model, API contract, user stories, wireframe and implementation plan should remain consistent with this scope.
 
-No application code has been implemented as part of this requirements update.
+The application is implemented as a Spring Boot backend and React frontend. It includes session authentication, project and task management, assignments, comments, project search, task filtering and frontend dashboard counts. Remaining questions concern account lifecycle, additional fields, deployment and future test tooling rather than the implemented baseline described above.

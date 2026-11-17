@@ -3,21 +3,21 @@
 
 ## 1. Purpose
 
-This document defines the user stories and acceptance criteria for the Matriz implementation required by Lab 03. The stories translate the functional requirements in `docs/requirements.md` into user-focused, testable outcomes.
+This document defines the user stories and acceptance criteria for the current Matriz implementation scope. The stories translate the functional requirements in `docs/requirements.md` into user-focused, testable outcomes.
 
-The original client brief establishes the need to organise projects, manage tasks and follow work progress. Lab 03 expands the initial proposed MVP by requiring authentication, project and task management, multiple task assignees, comments, search, filters and a dashboard.
+The original client brief establishes the need to organise projects, manage tasks and follow work progress. The implementation scope extends the initial proposed MVP with authentication, project and task management, multiple task assignees, comments, search, filters and a dashboard.
 
-The expanded scope is the implementation target for the practical exercise. It should not be interpreted as confirmation that the client independently requested or validated every detailed behaviour.
+The expanded scope is a Matriz project implementation target. It should not be interpreted as confirmation that the client independently requested or validated every detailed behaviour.
 
-Project visibility and operation permissions, assignee eligibility, deletion behavior, search and filter semantics, dashboard counts and validation rules are recorded as Lab 03 project decisions in `docs/requirements.md`. These decisions are not requirements independently confirmed by the client. Technical account details remain unspecified.
+Project visibility and operation permissions, assignee eligibility, deletion behavior, search and filter semantics, dashboard counts and validation rules are recorded as project decisions in `docs/requirements.md`. These decisions are not requirements independently confirmed by the client. Technical account details remain unspecified.
 
 ### Priority Definitions
 
-- **High:** Required functionality within the Lab 03 implementation scope.
+- **High:** Required functionality within the current implementation scope.
 - **Medium:** Optional functionality or an extension not required for the initial implementation.
 - **Low:** Functionality deferred from the initial implementation.
 
-The priorities in this document reflect the lab scope and implementation planning, not priorities independently assigned by the client.
+The priorities in this document reflect the project scope and implementation planning, not priorities independently assigned by the client.
 
 “Project manager” and “team member” are provisional personas used to describe user goals. They do not establish separate roles or permission groups. Apply the approved project/task and assignment permissions in `docs/requirements.md`.
 
@@ -39,7 +39,7 @@ As an authenticated user, I want to create a project, so that I can organise wor
 - **AC01.2 — Project validation:** Given a project name shorter than 3 or longer than 150 characters, or a description longer than 2,000 characters, when the user submits the form, then creation is rejected with a validation message. A description may be omitted.
 - **AC01.3 — Project visibility:** Given an authenticated user, when they list or view projects, then all projects are visible regardless of owner.
 
-**Lab 03 project decision:** Project name is required (3–150 characters); description is optional (maximum 2,000 characters). The creator is the owner.
+**Project decision:** Project name is required (3–150 characters); description is optional (maximum 2,000 characters). The creator is the owner.
 
 ### US02 — View, Search and Manage Projects
 
@@ -61,7 +61,7 @@ As an authenticated user, I want to view and search all projects and manage proj
 - **AC02.6 — Project with tasks:** Given a project contains one or more tasks, when its owner attempts deletion, then deletion is rejected with HTTP `409 Conflict` and the project remains.
 - **AC02.7 — Non-owner operation:** Given an authenticated non-owner attempts to edit or delete a project, then the operation is rejected and no change is made.
 
-**Lab 03 project decisions:** All authenticated users can view all projects and create projects; only the owner can edit/delete. Search matching and project validation are specified above.
+**Project decisions:** All authenticated users can view all projects and create projects; only the owner can edit/delete. Search matching and project validation are specified above.
 
 ### US03 — Create, View, Edit and Delete Tasks
 
@@ -82,7 +82,7 @@ As an authenticated user, I want to create, view and update tasks within any pro
 - **AC03.5 — Invalid project:** Given the selected project does not exist, when a task is submitted, then no task is created.
 - **AC03.6 — Task deletion:** Given the task creator or project owner confirms deletion, then the task is deleted together with its assignments and comments. Other authenticated users cannot delete it.
 
-**Lab 03 project decisions:** Authenticated users may create, view and update tasks in any project. Only the task creator or project owner may delete a task. Task title is required (3–150 characters); description is optional (maximum 2,000 characters). Status and priority use the values and defaults specified for Lab 03.
+**Project decisions:** Authenticated users may create, view and update tasks in any project. Only the task creator or project owner may delete a task. Task title is required (3–150 characters); description is optional (maximum 2,000 characters). Status and priority use the documented project values and defaults.
 
 ### US04 — Update Task Status
 
@@ -100,7 +100,7 @@ As an authenticated user, I want to update the status of a task in any project, 
 - **AC04.2 — Current status:** Given that a task has a saved status, when the user views the task, then its current status is visible.
 - **AC04.3 — Invalid status:** Given that a task has a saved status, when a value outside the supported status list is submitted, then the change is rejected and the previous status remains unchanged.
 
-**Scope rule:** Lab 03 specifies `TODO`, `IN_PROGRESS` and `DONE`, with `TODO` as the default. Additional transition restrictions should be applied only if defined.
+**Scope rule:** The project decision specifies `TODO`, `IN_PROGRESS` and `DONE`, with `TODO` as the default. Additional transition restrictions should be applied only if defined.
 
 ### US05 — View Project Progress and Dashboard Counts
 
@@ -121,7 +121,7 @@ As an authenticated user, I want to view accessible projects and their task stat
 - **AC05.5 — Counts by status:** Given the dashboard is displayed, then it shows counts across tasks in all projects for `TODO`, `IN_PROGRESS` and `DONE`, including zero counts. Counts include all priorities and assignees.
 - **AC05.6 — Empty dashboard:** Given there are no projects or tasks, then the dashboard shows an appropriate empty state and zero for all three status counts.
 
-**Scope note:** Task counts grouped by status are required by Lab 03. Counts are derived and include all task priorities and assignees. No percentage, charts or advanced analytics are included.
+**Scope note:** Task counts grouped by status are part of the current dashboard scope. Counts are derived and include all task priorities and assignees. No percentage, charts or advanced analytics are included.
 
 ### US06 — Assign Multiple Users to a Task
 
@@ -141,7 +141,7 @@ As an authenticated user, I want to assign existing accounts to a task and remov
 - **AC06.4 — Duplicate assignment:** Given that a user is already assigned to a task, when the same assignment is submitted again, then the application does not create a duplicate task-user association.
 - **AC06.5 — Non-existent user:** Given the selected user account does not exist, when the assignment is submitted, then it is rejected and existing assignments remain unchanged.
 
-**Lab 03 project decision:** Any authenticated user may add or remove assignments. Any existing user account may be assigned; project ownership is not required. Duplicate task/user assignments are prohibited.
+**Project decision:** Any authenticated user may add or remove assignments. Any existing user account may be assigned; project ownership is not required. Duplicate task/user assignments are prohibited.
 
 ### US07 — Authenticate and Identify the Current User
 
@@ -201,7 +201,7 @@ As an authenticated user, I want to filter tasks by status and priority, so that
 - **AC09.4 — Omitted filter:** Given either filter is omitted, then it does not restrict the results.
 - **AC09.5 — No matching tasks:** Given no tasks match the selected criteria, when filters are applied, then no task entries are displayed and an appropriate empty state is shown.
 
-**Lab 03 project decision:** Any authenticated user may filter tasks across any project; filters combine with AND behavior.
+**Project decision:** Any authenticated user may filter tasks across any project; filters combine with AND behavior.
 
 ## 3. Exceptional Situations and Edge Cases
 
@@ -297,18 +297,18 @@ As an authenticated user, I want to filter tasks by status and priority, so that
 
 - The user stories cover the functional requirements FR01–FR11 documented in `docs/requirements.md`.
 - Acceptance criteria describe observable outcomes and should be verified through the user interface, API behaviour or automated tests, as appropriate.
-- The Lab 03 implementation scope includes authentication, project and task management, multiple task assignees, comments, project-name search, task filters and dashboard counts.
+- The current implementation scope includes authentication, project and task management, multiple task assignees, comments, project-name search, task filters and dashboard counts.
 - Public registration and password recovery are optional extensions and are not required for the initial implementation.
-- Project visibility and permissions, project/task validation, assignee eligibility, dependent-record deletion, search behavior, filter combination and dashboard count rules follow the Lab 03 project decisions recorded in `docs/requirements.md`.
+- Project visibility and permissions, project/task validation, assignee eligibility, dependent-record deletion, search behavior, filter combination and dashboard count rules follow the project decisions recorded in `docs/requirements.md`.
 - Technical account details remain unspecified; do not add roles or permission groups by inference.
 - Task status and priority values, defaults and validation rules must be consistent across the requirements, database model, API contract and user interface.
 - The user stories describe expected behaviour without prescribing the technical implementation.
-- The original client brief and the Lab 03 implementation scope must remain distinguishable: the lab defines the minimum practical implementation target, while unspecified business rules must not be presented as client-confirmed decisions.
+- The original client brief and the Matriz implementation scope must remain distinguishable: the client confirmed only the high-level needs, while unspecified business rules must not be presented as client-confirmed decisions.
 
 ## 5. Current Status
 
-This backlog has been updated to reflect the Lab 03 functional scope. It includes user stories and acceptance criteria for authentication, project management, task management, multiple assignees, comments, project search, task filtering and dashboard counts.
+This backlog reflects the current Matriz implementation scope. It includes user stories and acceptance criteria for authentication, project management, task management, multiple assignees, comments, project search, task filtering and dashboard counts.
 
-The approved Lab 03 business rules are reflected in these stories. Account representation remains unspecified; it must not be converted into invented roles or client-confirmed requirements.
+The documented project decisions are reflected in these stories. Account representation remains unspecified; it must not be converted into invented roles or client-confirmed requirements.
 
-The backlog must be reviewed alongside `docs/requirements.md`, `docs/constraints.md`, `docs/architecture.md`, `docs/database.md`, `openapi.yaml` and the UI wireframe to identify and resolve inconsistencies before implementation begins.
+The backlog should be reviewed alongside `docs/requirements.md`, `docs/constraints.md`, `docs/architecture.md`, `docs/database.md`, `openapi.yaml` and the UI wireframe during maintenance and verification. The implementation is in place; documentation and verification updates should reflect the current behavior without treating project decisions as additional client-confirmed requirements.

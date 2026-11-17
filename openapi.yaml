@@ -7,11 +7,11 @@ info:
   description: |
     Proposed REST API contract for the Matriz application.
 
-    This contract covers the minimum functional scope required by Lab 03.
+    This contract covers the current Matriz implementation scope.
     The original client brief only confirmed the high-level need to organise
     projects, manage tasks and follow work progress. Detailed functionality
-    and business rules in this contract are proposed implementation decisions
-    or course requirements, not additional client-confirmed requirements.
+    and business rules in this contract are proposed implementation decisions,
+    not additional client-confirmed requirements.
 
     Every state-changing request requires the X-CSRF-TOKEN header. Obtain its
     BREACH-protected value from GET /auth/csrf and obtain a fresh token after
@@ -27,7 +27,6 @@ tags:
   - name: Tasks
   - name: Assignments
   - name: Comments
-  - name: Dashboard
 
 paths:
 
@@ -244,7 +243,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: Project cannot be deleted because it still contains one or more tasks.
+          $ref: '#/components/responses/Conflict'
 
   /projects/{projectId}/tasks:
     parameters:
@@ -397,6 +396,8 @@ paths:
           description: Task deleted.
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -476,7 +477,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: User is already assigned to the task.
+          $ref: '#/components/responses/Conflict'
 
   /tasks/{taskId}/assignees/{userId}:
     parameters:
@@ -554,28 +555,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-
-  /dashboard:
-    get:
-      tags:
-        - Dashboard
-      summary: Get dashboard
-      description: |
-        Returns all projects to the authenticated user and counts across all
-        tasks in those projects, grouped for TODO, IN_PROGRESS and DONE.
-        All three statuses are included even when the count is zero. Counts
-        include all priorities and assignees and are derived from task data;
-        no percentage, charts or advanced analytics are included.
-      operationId: getDashboard
-      responses:
-        '200':
-          description: Dashboard data.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Dashboard'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
 
 components:
 
@@ -673,6 +652,7 @@ components:
           type: string
           minLength: 3
           maxLength: 150
+          pattern: '[\s\S]*\S[\s\S]*'
         description:
           type: string
           maxLength: 2000
@@ -686,6 +666,7 @@ components:
           type: string
           minLength: 3
           maxLength: 150
+          pattern: '[\s\S]*\S[\s\S]*'
         description:
           type: string
           maxLength: 2000
@@ -702,6 +683,7 @@ components:
           type: string
           minLength: 3
           maxLength: 150
+          pattern: '[\s\S]*\S[\s\S]*'
         description:
           type: string
           maxLength: 2000
@@ -731,8 +713,7 @@ components:
       properties:
         title:
           type: string
-          minLength: 3
-          maxLength: 150
+          description: The backend trims this value using Java String.strip(), then rejects blank values and enforces a length of 3 to 150 UTF-16 code units. Backend validation is authoritative; this contract does not encode those exact Java semantics as a portable schema constraint.
         description:
           type: string
           maxLength: 2000
@@ -750,8 +731,7 @@ components:
       properties:
         title:
           type: string
-          minLength: 3
-          maxLength: 150
+          description: The backend trims this value using Java String.strip(), then rejects blank values and enforces a length of 3 to 150 UTF-16 code units. Backend validation is authoritative; this contract does not encode those exact Java semantics as a portable schema constraint.
         description:
           type: string
           maxLength: 2000
@@ -784,11 +764,6 @@ components:
           $ref: '#/components/schemas/TaskStatus'
         priority:
           $ref: '#/components/schemas/TaskPriority'
-        assignees:
-          type: array
-          items:
-            $ref: '#/components/schemas/UserSummary'
-
     TaskPage:
       type: object
       required:
@@ -864,33 +839,6 @@ components:
           type: string
           format: date-time
 
-    Dashboard:
-      type: object
-      required:
-        - projects
-        - taskCounts
-      properties:
-        projects:
-          type: array
-          items:
-            $ref: '#/components/schemas/Project'
-        taskCounts:
-          type: object
-          required:
-            - TODO
-            - IN_PROGRESS
-            - DONE
-          properties:
-            TODO:
-              type: integer
-              minimum: 0
-            IN_PROGRESS:
-              type: integer
-              minimum: 0
-            DONE:
-              type: integer
-              minimum: 0
-
     Error:
       type: object
       required:
@@ -908,7 +856,10 @@ components:
             $ref: '#/components/schemas/Error'
 
     Unauthorized:
-      description: Authentication is required or the session is invalid.
+      description: Authentication is required or the session is invalid. The response has no body.
+
+    Conflict:
+      description: The request conflicts with the current resource state.
       content:
         application/json:
           schema:

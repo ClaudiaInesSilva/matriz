@@ -87,7 +87,7 @@ After completing a task:
 
 ## 9. Technical Decisions
 
-The project's programming language, framework, database, architecture and deployment approach may not yet be defined.
+The selected programming language, framework, database and architecture are documented in `docs/architecture.md`; deployment and hosting remain open.
 
 - Do not assume a technology has been approved unless the documentation or an explicit project decision confirms it.
 - Avoid technology-specific instructions until the relevant decisions have been made.
@@ -101,3 +101,34 @@ Keep project documentation consistent across `README.md` and the files in `docs/
 When an approved change affects documented requirements, assumptions, priorities or scope, identify which documents need updating.
 
 Do not silently resolve contradictions by inventing new requirements. Highlight the conflict and seek clarification when necessary.
+
+## 11. Common Windows PowerShell Commands
+
+The root `README.md` is the authoritative clean-clone setup guide, including official prerequisite links, PostgreSQL roles/databases, environment variables, demo-account provisioning, and the dedicated integration-test database setup. Do not copy or expose credentials.
+
+From the repository root, start the backend in one PowerShell session after setting `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` as described in the README:
+
+```powershell
+Set-Location .\backend
+mvn spring-boot:run "-Dspring-boot.run.profiles=local"
+```
+
+In another PowerShell session, run the frontend:
+
+```powershell
+Set-Location .\frontend
+npm ci
+npm run dev
+```
+
+Run backend and frontend checks from the repository root:
+
+```powershell
+Set-Location .\backend
+mvn test
+Set-Location ..\frontend
+npm run lint
+npm run build
+```
+
+The optional PostgreSQL integration test command is `mvn "-Dtest=PostgresAssignmentCommentPersistenceTest" test` from `backend`. Set `MATRIZ_TEST_DB_USERNAME=matriz_test_app` and `MATRIZ_TEST_DB_PASSWORD` for the process as described in the README. The test class pins its URL to `jdbc:postgresql://127.0.0.1:5432/matriz_test` and asserts the connected database name. Never point integration tests at `matriz_db`; do not provision, reset, truncate, or otherwise alter the development database for test setup.

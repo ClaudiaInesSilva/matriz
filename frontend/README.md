@@ -1,32 +1,41 @@
-# React + TypeScript + Vite
+# Matriz frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The frontend implements authentication and session handling, a dashboard with project/task summaries, project search and management, task management and filtering, assignments, and comments. It uses the existing backend APIs; dashboard counts are computed by the frontend rather than provided by a separate dashboard endpoint.
 
-Currently, two official plugins are available:
+The root [README](../README.md) is the main guide for a fresh Windows setup,
+including PostgreSQL, backend startup, demo-account provisioning, and the
+three separate PowerShell sessions.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Run the frontend
 
-## React Compiler
+After starting the backend and provisioning a password for `demo.alex` and/or
+`demo.sam`, open the third PowerShell session at the repository root:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```powershell
+Set-Location .\frontend
+npm ci
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open the URL printed by Vite, normally `http://localhost:5173`. Vite proxies
+`/api` requests to `http://localhost:8080` by default, so keep the backend
+running. To use a backend at another host or port, set
+`VITE_API_PROXY_TARGET` before starting Vite, for example:
+
+```powershell
+$env:VITE_API_PROXY_TARGET = 'http://localhost:8081'
+```
+
+The API base path defaults to `/api`. Do not put credentials in frontend
+environment variables.
+
+Authentication uses the backend session cookie. The client includes browser
+credentials and obtains a fresh CSRF token before each state-changing request.
+Passwords and session credentials are not stored in browser storage.
+
+Run frontend checks from this directory:
+
+```powershell
+npm run lint
+npm run build
+```

@@ -239,10 +239,10 @@ These decisions implement the project scope; they are not additional requirement
 
 ### 6.3 Remaining Questions
 
-The following matters must be resolved or documented before the affected functionality is implemented:
+The following matters remain unresolved or outside the current implemented account lifecycle:
 
-- Which account identifier is used for login?
-- Which user attributes are required beyond the conceptual fields shown here?
+- Which additional user attributes or lifecycle operations, beyond the selected `username` login identifier and `display_name`, are required?
+- Should public registration and password recovery be added?
 - Should project and task creation dates or update dates be stored?
 - Should comment editing be added in a future extension? It is outside the current scope.
 
@@ -277,8 +277,12 @@ The conceptual entities are implemented in PostgreSQL by versioned Flyway migrat
 | `task_assignments` | Task and user FKs; composite primary key `(task_id, user_id)` prevents duplicates; task deletion cascades and user deletion is restricted. |
 | `comments` | UUID primary key; task and author FKs; content length 1–2,000 and non-whitespace constraint; required `TIMESTAMPTZ`; task deletion cascades and author deletion is restricted. |
 
-Indexes are created for `tasks.project_id`, `task_assignments.user_id` and `comments.task_id`. The migration schema encodes structural constraints; it does not implement application authorization, authentication or API workflows. The application implements session authentication and project operations, including owner checks and a conflict response when tasks prevent project deletion. `username` is the selected login identifier. Account lifecycle and client-facing validation behavior remain unresolved.
+Indexes are created for `tasks.project_id`, `task_assignments.user_id` and `comments.task_id`. The migration schema encodes structural constraints; it does not implement application authorization, authentication or API workflows. The application implements session authentication and project/task/comment/assignment workflows, including project-owner and task creator-or-owner checks and conflict responses for dependent project deletion or duplicate assignments.
+
+`username` is the implemented login identifier. Account registration and password recovery are not implemented; account lifecycle beyond the local demo-account provisioning workflow remains unresolved. At the API boundary, project names, task titles, task descriptions and comment content are validated with Jakarta Bean Validation and tested through MockMvc; invalid input is returned as HTTP `400 Bad Request` with an error message.
 
 V2 seeds two users (`demo.alex`, `demo.sam`), two projects owned by different users, two tasks, two cross-owner assignments and one comment. These exact usernames are reserved for the demo accounts; the local provisioner targets the same pair. Seed inserts use fixed identifiers and conflict-safe inserts. V3 disables both demo accounts in every environment where the migration runs; it contains no usable password hashes. A separate provisioning entry point, restricted to the local profile and loopback PostgreSQL URLs, prompts for local-only passwords and stores BCrypt hashes. Ordinary application startup does not provision demo credentials. The demo-account authentication flag applies only to these reserved names; other accounts with usable BCrypt hashes remain governed by their own credentials. Authentication must reject missing, malformed and disabled-marker values.
 
-Flyway previously validated and applied V1 and V2 to a local PostgreSQL 18.7 database, and its history table recorded both as successful. V3 has been added but was not applied during this change; the existing local database remains at its prior migration state until a later normal startup applies it. Hibernate schema validation of V3 and the updated mapping has not been performed. These checks do not establish that persistence constraint tests or application-level integration tests have passed.
+V1, V2 and V3 are present in the repository. Flyway previously validated and applied V1 and V2 to a local PostgreSQL 18.7 database, and that database history recorded both as successful. V3 is also present and will be considered by normal Flyway startup, but this document does not claim that it has been applied to every environment. A database's Flyway history must be consulted to confirm which migrations have been applied to that database.
+
+The current backend suite reported 80 tests, 0 failures, 0 errors and 3 skipped opt-in PostgreSQL tests. The project controller validation tests reported 12 passing tests, including project-name whitespace coverage. A prior targeted PostgreSQL integration run was reported as passing, but the current verification run skipped those tests because dedicated test credentials were unavailable. The repository does not claim any migration or persistence result beyond the evidence recorded in `docs/verification.md`.

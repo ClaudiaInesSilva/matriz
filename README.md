@@ -4,9 +4,9 @@ Matriz is a project and task management application intended for work teams with
 
 ## Current implementation
 
-The repository contains a runnable Spring Boot backend with PostgreSQL persistence, JPA mappings, Flyway migrations, reproducible demonstration records, session-based authentication and project-management endpoints. Authenticated users can list, search, view and create projects; only project owners can update or delete them, and projects with tasks cannot be deleted. The React/TypeScript/Vite frontend remains a starter scaffold; task, assignment, comment and dashboard workflows have not been implemented.
+The application provides session-based authentication and a React frontend for the dashboard, project and task management, assignments, and comments. The Spring Boot backend provides the corresponding APIs and PostgreSQL persistence through JPA and Flyway. The dashboard aggregates project and task data from the existing APIs; there is no separate dashboard API endpoint.
 
-The persistence model currently covers users, projects, tasks, task assignments and comments. The backend has been started successfully on port 8080 against PostgreSQL 18.7; Flyway validated and applied both migrations, its history recorded both as successful, and Hibernate schema validation succeeded. The frontend production build and development server have also been verified. These checks do not establish application-level workflow or persistence constraint test coverage.
+The backend uses authenticated sessions and CSRF protection. The local demo users are seeded without usable passwords; set local-only passwords using the provisioning instructions below before signing in. The frontend uses Vite's development proxy to call the backend. The three needs confirmed by the original client brief are to organise projects, manage tasks, and follow work progress; detailed behavior below reflects project decisions and is not additional client-confirmed scope.
 
 ## Technology
 
@@ -31,22 +31,49 @@ openapi.yaml                      Proposed REST API contract
 
 ## Prerequisites
 
-- Git.
-- Java Development Kit 21.
-- Maven (required for the `mvn` commands below; no Maven Wrapper is included).
-- PostgreSQL 18 (or a compatible PostgreSQL installation).
-- Node.js 24 and npm 11.
-- PowerShell examples below assume Windows. Commands can be adapted for another shell.
+- [Git for Windows](https://git-scm.com/download/win).
+- [Java Development Kit 21](https://adoptium.net/temurin/releases/?version=21&os=any&arch=x64).
+- [Apache Maven](https://maven.apache.org/install.html) installed and available as `mvn`. The repository does not include a Maven
+  Wrapper or pin a Maven version.
+- [PostgreSQL for Windows](https://www.postgresql.org/download/windows/) 18 (18.7 is the version verified for this project), with its service
+  running. The PostgreSQL command-line client (`psql`) is needed for the setup
+  commands below.
+- [Node.js 24](https://nodejs.org/en/download) (npm 11 is included with the selected Node.js installation).
+
+The commands below are for Windows PowerShell, run from the cloned repository
+root unless a step says otherwise. Check that the tools are available:
+
+```powershell
+git --version
+java -version
+mvn -version
+psql --version
+node --version
+npm --version
+```
 
 ## Local database setup
 
-Create an application role and database on a fresh local PostgreSQL installation. Run these commands in `psql` as a local PostgreSQL administrator. `\password matriz_app` prompts for the role password without putting it in SQL or shell history.
+Start the PostgreSQL Windows service if it is not already running. Open
+**Services** from the Start menu (or run `services.msc`), find the PostgreSQL
+service installed on your computer, and start it.
+
+Open an administrator `psql` session. For a standard installation whose
+administrator role is `postgres`, run this in PowerShell:
+
+```powershell
+psql -U postgres -h localhost -p 5432 -d postgres
+```
+
+If your PostgreSQL administrator uses a different role, substitute that role.
+You can also open the installed **SQL Shell (psql)** and connect as your
+administrator. The following commands are for the `psql` prompt, not pgAdmin's
+SQL editor. On a fresh database installation, create the application role,
+choose its password at the secure prompt, then create the database:
 
 ```sql
 CREATE ROLE matriz_app LOGIN;
 ```
-
-In the same `psql` session, set the password interactively and create the database:
 
 ```text
 \password matriz_app
@@ -56,7 +83,21 @@ In the same `psql` session, set the password interactively and create the databa
 CREATE DATABASE matriz_db OWNER matriz_app;
 ```
 
-Configure the backend environment in the same PowerShell window from which it will be started:
+If the role or database already exists, do not run its corresponding `CREATE`
+command again or reset existing data; use the existing local setup. Keep the
+application role password private and never commit it to Git.
+
+## Run the application
+
+The backend, provisioning command and frontend run in **three separate
+PowerShell sessions**. Values assigned using `$env:` are process-specific:
+configure the database variables again in each new session that needs them.
+Spring Boot does not load `.env` files automatically.
+
+### 1. Backend application
+
+In the first PowerShell session, configure the datasource and start the backend.
+The password prompt is secure; the value is not part of the command text:
 
 ```powershell
 $env:DB_URL = 'jdbc:postgresql://localhost:5432/matriz_db'
@@ -64,75 +105,152 @@ $env:DB_USERNAME = 'matriz_app'
 $securePassword = Read-Host 'Enter the local matriz_app password' -AsSecureString
 $env:DB_PASSWORD = [System.Net.NetworkCredential]::new('', $securePassword).Password
 $securePassword.Dispose()
-```
 
-Alternatively, set the three variables in the IntelliJ IDEA run configuration. Spring Boot does **not** automatically load `.env` files. Provide environment variables through the shell/process environment or the IDE run configuration. `.env.example` documents the expected variable names and URL using fictional values; it is a reference template, not a credential source. A developer may copy it as a reminder, but must provide actual values through a supported environment-variable mechanism and keep any real `.env` file uncommitted. The repository `.gitignore` excludes real `.env` files and permits `.env.example`.
-
-## Start the backend
-
-From the repository root in PowerShell, after setting the variables above:
-
-```powershell
-cd backend
+Set-Location .\backend
 mvn spring-boot:run "-Dspring-boot.run.profiles=local"
 ```
 
-The backend listens on port 8080. The local profile sets the session cookie's `Secure` attribute to false for local HTTP development. Outside that profile, `Secure` defaults to true; deployments can override it through `MATRIZ_SESSION_COOKIE_SECURE` when required. The `JSESSIONID` cookie is HttpOnly and SameSite=Lax. Flyway applies pending versioned migrations from `backend/src/main/resources/db/migration` automatically at startup. A successful migration is recorded in `flyway_schema_history` and is not reapplied on each startup. Normal application restarts therefore do not reset existing data. Hibernate uses schema validation (`ddl-auto=validate`); it does not create or reset the schema.
+The backend listens on `http://localhost:8080`. The `local` profile enables
+local demo-account authentication and configures the session cookie for local
+HTTP development. At startup, Flyway applies any pending migrations from
+`backend/src/main/resources/db/migration`. Migrations are recorded and are not
+reapplied on every startup; Hibernate validates the schema and does not create
+or reset it. Leave this session running.
 
-Spring Security requires authentication for protected requests. Authentication endpoints are:
+The backend datasource variables are `DB_URL`, `DB_USERNAME` and `DB_PASSWORD`.
+`MATRIZ_SESSION_COOKIE_SECURE` defaults to `true` outside the `local` profile;
+the local profile disables the Secure cookie attribute for local HTTP.
 
-- `GET /api/auth/csrf` returns JSON containing the BREACH-protected `token` exposed by Spring Security's XOR request handler and `headerName: X-CSRF-TOKEN`.
-- `POST /api/auth/login` accepts a JSON `username` and `password`, establishes an authenticated server-side session and returns the user profile.
-- `GET /api/auth/me` returns the authenticated user's ID, username and display name.
-- `POST /api/auth/logout` invalidates the authenticated session and returns `204`; unauthenticated requests receive `401`.
+### 2. Demo-account provisioning
 
-Send the token returned by `/api/auth/csrf` unchanged in the `X-CSRF-TOKEN` header on login, logout and every other state-changing request. Login and logout invalidate the previous CSRF token; obtain a fresh token afterward. Project endpoints are available under `/api/projects`; task, assignment and comment workflows are not yet implemented.
-
-V1 creates `users`, `projects`, `tasks`, `task_assignments` and `comments`. V2 inserts reproducible demonstration data: two users, two projects with different owners, two tasks, one assignment from each task to a user other than that project's owner (two cross-owner assignments), and one comment. V3 disables credentials for the two demo users and makes `password_hash` non-null. The migration contains no usable demo credentials. On the next backend startup Flyway applies V3 if it is pending.
-
-### Optional local demo-account provisioning
-
-Demo accounts cannot log in by default. To use them locally, first let the backend apply V3 to your local database, then run the separate provisioning entry point from `backend`:
+The database migrations seed `demo.alex` and `demo.sam`, but do not give them
+usable passwords. In a **second, interactive PowerShell session**, configure
+the same database variables again; variables from the backend session are not
+inherited by this separate window:
 
 ```powershell
+$env:DB_URL = 'jdbc:postgresql://localhost:5432/matriz_db'
+$env:DB_USERNAME = 'matriz_app'
+$securePassword = Read-Host 'Enter the local matriz_app password' -AsSecureString
+$env:DB_PASSWORD = [System.Net.NetworkCredential]::new('', $securePassword).Password
+$securePassword.Dispose()
+
+Set-Location .\backend
 mvn spring-boot:run "-Dspring-boot.run.main-class=com.matriz.users.LocalDemoAccountProvisioningApplication"
 ```
 
-The command requires a loopback PostgreSQL URL (`localhost`, `127.0.0.1` or `::1`), activates the local profile, does not run Flyway, and prompts for each demo password without echoing it. Choose fictional local-development-only passwords; the application stores BCrypt hashes. This command is separate from ordinary backend startup. The local profile enables authentication only for the two reserved demo usernames, `demo.alex` and `demo.sam`; ordinary configuration keeps those accounts disabled. Future non-demo accounts are not disabled by this flag.
+The provisioning launcher activates both required Spring profiles,
+`local` and `local-provisioning`, internally. It uses an interactive terminal
+to prompt for a new password and confirmation for each account. Choose your
+own local-only passwords for `demo.alex` and `demo.sam`; there are no default
+demo passwords. The application stores password hashes, not plaintext
+passwords. After provisioning succeeds, this session can be closed.
 
-## Start and build the frontend
+### 3. Frontend development server
 
-Open a separate PowerShell window:
+In a **third PowerShell session**, install the locked frontend dependencies
+and start Vite:
 
 ```powershell
-cd frontend
-npm install
+Set-Location .\frontend
+npm ci
 npm run dev
 ```
 
-Vite prints the local development URL. To create the production build:
+Open the URL printed by Vite, normally
+`http://localhost:5173`. If that port is in use, Vite may print a different
+port. The development server proxies `/api` requests to
+`http://localhost:8080`; both servers must be running. To use a different
+backend address, set `VITE_API_PROXY_TARGET` in this PowerShell session before
+starting Vite, for example:
 
 ```powershell
+$env:VITE_API_PROXY_TARGET = 'http://localhost:8081'
+```
+
+Sign in with `demo.alex` or `demo.sam` and the password you chose for that
+account during provisioning. There is no public registration or default demo
+password. The frontend detects an existing session, displays the signed-in
+user, and supports signing out. Session authentication uses an HttpOnly cookie;
+the API client obtains and sends CSRF tokens for state-changing requests.
+
+## Troubleshooting
+
+- **PostgreSQL connection refused:** Start the PostgreSQL Windows service and
+  confirm that the server listens on port `5432`.
+- **Role or database does not exist:** Create `matriz_app` and `matriz_db` as
+  described above, or correct the datasource variables to match your local
+  database. Do not point local provisioning at a remote database.
+- **Password authentication failed for `matriz_app`:** Check that
+  `DB_PASSWORD` matches the password set for that PostgreSQL role, and that
+  the variables were set in the PowerShell session running the command.
+- **Demo login is rejected:** Run the backend successfully first so Flyway
+  creates the seeded accounts, then run the interactive provisioning command
+  and use the password set for the selected username.
+- **Demo login still fails:** Start the normal backend with the `local` profile
+  using the command above. The provisioning launcher activates its own
+  `local` and `local-provisioning` profiles; do not use it to start the normal
+  web application.
+- **Provisioning reports that an interactive terminal is required:** Run the
+  command in a regular interactive PowerShell window, not a background task,
+  IDE process without a console, or redirected terminal.
+- **Frontend cannot reach the backend:** Confirm the backend is running at
+  `http://localhost:8080`. If it uses another host or port, set
+  `VITE_API_PROXY_TARGET` before starting or restarting Vite.
+
+## Build and checks
+
+Run the frontend commands from `frontend`:
+
+```powershell
+npm run lint
 npm run build
 ```
 
-## Inspect the database
+Run backend tests from `backend`:
 
-In pgAdmin, connect to the local PostgreSQL server, open `matriz_db`, and inspect `public` tables. `flyway_schema_history` shows migration versions and success status; the five application tables contain the demonstration records.
+```powershell
+mvn test
+```
 
-The same data can be inspected with `psql`:
+The PostgreSQL persistence integration tests are opt-in and target only `jdbc:postgresql://127.0.0.1:5432/matriz_test`. They use the separate `matriz_test_app` role and must never be pointed at the development database `matriz_db`.
+
+If the test role and database do not already exist, open an administrator `psql` session as described above and, only on a fresh setup, run:
 
 ```sql
-SELECT version, description, success FROM flyway_schema_history ORDER BY installed_rank;
-SELECT username, display_name FROM users ORDER BY username;
-SELECT name, owner_id FROM projects ORDER BY name;
-SELECT title, status, priority FROM tasks ORDER BY title;
-SELECT task_id, user_id FROM task_assignments ORDER BY task_id, user_id;
-SELECT content, created_at FROM comments ORDER BY created_at;
+CREATE ROLE matriz_test_app LOGIN;
 ```
+
+At the `psql` prompt, set the role password interactively:
+
+```text
+\password matriz_test_app
+```
+
+Then create the dedicated test database owned by that role:
+
+```sql
+CREATE DATABASE matriz_test OWNER matriz_test_app;
+```
+
+Do not rerun `CREATE` commands for existing objects, and do not drop, reset, truncate, or reuse `matriz_db` for these tests. The integration test pins its JDBC URL to `matriz_test` and asserts `current_database()` is `matriz_test`.
+
+To run the integration tests, open a PowerShell session, configure the test credentials without putting the password in command history, and run the targeted command from `backend`:
+
+```powershell
+$env:MATRIZ_TEST_DB_USERNAME = 'matriz_test_app'
+$secureTestPassword = Read-Host 'Enter the local matriz_test_app password' -AsSecureString
+$env:MATRIZ_TEST_DB_PASSWORD = [System.Net.NetworkCredential]::new('', $secureTestPassword).Password
+$secureTestPassword.Dispose()
+
+Set-Location .\backend
+mvn "-Dtest=PostgresAssignmentCommentPersistenceTest" test
+```
+
+The full backend suite can be run from `backend` using `mvn test`. Without the test credentials, the opt-in PostgreSQL integration tests are skipped; with credentials set, they still connect only to the guarded `matriz_test` database.
 
 ## Limitations and project decisions
 
-Task, assignment and comment workflows, task filtering and dashboard behavior are not implemented. Project operations are implemented as described above; other API operations remain planned. Detailed behaviors in requirements and user stories are project implementation decisions, not additional client-confirmed requirements. Account lifecycle, deployment and non-functional targets remain unresolved; session and CSRF defaults are configured as described above.
+The frontend implements authentication, dashboard, project, task, assignment and comment workflows. Detailed behaviors in requirements and user stories are project implementation decisions, not additional client-confirmed requirements. Account lifecycle, deployment and non-functional targets remain unresolved; session and CSRF defaults are configured as described above. Frontend behavior has no automated test suite at this stage.
 
 See `docs/requirements.md`, `docs/user-stories.md` and the other files in `docs/` for scope, assumptions and open questions.

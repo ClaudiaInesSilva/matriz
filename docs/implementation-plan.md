@@ -4,7 +4,7 @@
 
 This plan sequences implementation of the project scope documented in `docs/requirements.md`. The original client brief confirms only the high-level needs to organise projects, manage tasks and follow work progress. The detailed functionality and the working technical choices below are not additional client-confirmed requirements.
 
-The selected architecture is a Modular Monolith with a Java 21/Spring Boot 4.1.2/Maven backend, Spring Security 7.1.2, React 19.3.1/TypeScript 7.0.2 frontend using Vite declared as `^8.3.6` (lockfile resolves 8.3.8) and npm 11, PostgreSQL 18.7 with Spring Data JPA, and Flyway 13.12.1. The Spring Security protected-defaults foundation is implemented; login/logout/current-user behavior remains unimplemented. The technical foundation and database persistence are implemented; deployment and some test tooling remain undecided.
+The selected architecture is a Modular Monolith with a Java 21/Spring Boot 4.1.2/Maven backend, Spring Security 7.1.2, React 19.3.1/TypeScript 7.0.2 frontend using Vite declared as `^8.3.6` (lockfile resolves 8.3.8) and npm 11, PostgreSQL 18.7 with Spring Data JPA, and Flyway 13.12.1. The authentication/session foundation, technical setup, database persistence and application workflows are implemented. Deployment and some test tooling remain undecided.
 
 The plan covers authentication; project and task CRUD; task status (`TODO`, `IN_PROGRESS`, `DONE`, default `TODO`) and priority (`LOW`, `MEDIUM`, `HIGH`, default `MEDIUM`); multiple assignees; task comments; project-name search; task status/priority filters; and the dashboard with all projects and status-grouped task counts.
 
@@ -49,32 +49,32 @@ The following details remain open and must stay visible during planning. They do
 - Configured the application connection using environment variables without committing credentials.
 - Implemented JPA mappings for `User`, `Project`, `Task`, `TaskAssignment` and `Comment` based on `docs/database.md`.
 - The schema represents one project per task, many-to-many task assignments with a unique task/user pair, and task comments with one author and creation date.
-- V1 applies project/task field lengths and status/priority constraints and defaults, comment length/non-whitespace constraints, foreign keys, delete behavior and indexes. Application-level validation remains future work.
-- Flyway is selected and documented; V1 creates the core schema and V2 inserts demonstration data.
+- V1 applies project/task field lengths and status/priority constraints and defaults, comment length/non-whitespace constraints, foreign keys, delete behavior and indexes. Request validation is implemented at the API boundary.
+- Flyway applies the core schema and demonstration data through V1 and V2; V3 disables seeded demo credentials until local provisioning.
 - The conceptual model does not require a separately persisted dashboard count entity.
 
 **Relevant files/modules:** `docs/database.md`; `backend/src/main/resources/application.properties`, `backend/src/main/resources/db/migration/` and persistence packages under `backend/src/main/java/com/matriz/`.
 
 **Dependencies:** Phase 1. The schema/migration approach and persistence mappings are implemented.
 
-**Deliverables:** Database configuration, V1/V2 migrations and persistence mappings. Persistence constraint tests and application-level integration tests are not verified as completed.
+**Deliverables:** Database configuration, V1–V3 migrations, persistence mappings and dedicated PostgreSQL persistence tests.
 
-**Completion verification:** PostgreSQL 18.7 connection verified; Flyway validated and applied both migrations and recorded successful history; Hibernate schema validation succeeded. Constraint and application-level integration tests remain pending.
+**Completion verification:** PostgreSQL connection, Flyway migrations and Hibernate schema validation have been verified. The dedicated persistence tests target the separate `matriz_test` database; their execution depends on locally configured test credentials.
 
 ### Phase 3 — Authentication and Current-User Handling — Completed
 
 **Objective:** Establish server-side session authentication and a trusted current-user identity for protected operations.
 
-**Status:** Completed for backend authentication endpoints and authentication/session/CSRF tests. Resource-specific identity use and authorization remain part of Phases 4–6.
+**Status:** Completed. Backend login, logout, current-user identity, session handling, CSRF, password hashing and protected-by-default access are implemented and covered by security tests. Resource-specific identity and authorization are implemented in the project, task and comment workflows.
 
 **Main tasks:**
 
-- Build on the protected-defaults foundation in `com.matriz.security`; implement login and current-user behavior matching `/auth/login` and `/auth/me`, and configure the Spring Security logout filter for `POST /auth/logout` with a `204` success response and `401` for unauthenticated requests.
+- The `com.matriz.security` module implements login and current-user behavior matching `/auth/login` and `/auth/me`, and configures the Spring Security logout filter for `POST /auth/logout` with a `204` success response and `401` for unauthenticated requests.
 - Demo records have no usable credentials unless provisioned locally through the separate local-only process. Registration and password recovery remain outside the implemented foundation.
-- The authentication principal exposes the caller's identity for Phases 4–6; project ownership, task authorship and comment authorship must derive from this principal when those operations are implemented.
-- Establish authentication tests for valid/invalid credentials, session invalidation, current identity and unauthenticated protected requests.
-- Treat `demo.alex` and `demo.sam` as reserved demo usernames; test that the disabled-demo policy still permits a non-demo username with a valid BCrypt hash.
-- Test the complete logout behavior through MockMvc and the configured security filter chain, including unauthenticated 401 behavior and obtaining and using a fresh CSRF token after logout.
+- The authentication principal supplies the identity used for project ownership, task creation and comment authorship.
+- Authentication tests cover valid/invalid credentials, session invalidation, current identity, CSRF behavior and unauthenticated protected requests.
+- `demo.alex` and `demo.sam` are reserved demo usernames; tests cover disabled-demo restrictions and BCrypt credentials.
+- Logout tests exercise the configured security filter chain, unauthenticated 401 behavior and obtaining and using a fresh CSRF token after logout.
 
 **Relevant files/modules:** Authentication and security modules; `openapi.yaml` Authentication paths; `database.md` User entity.
 
@@ -84,32 +84,31 @@ The following details remain open and must stay visible during planning. They do
 
 **Completion verification:** API checks confirm session establishment, current-user identity, logout invalidation and rejection of unauthenticated protected calls without exposing sensitive details.
 
-### Phase 4 — Backend Modules and REST API — Project Management Completed
+### Phase 4 — Backend Modules and REST API — Completed
 
 **Objective:** Implement the project/task domain operations and their dependent assignments and comments through the documented REST contract.
 
-**Status:** Project listing, name search, viewing, creation, owner-only updates and owner-only deletion are implemented and covered by backend API tests. Task, assignment and comment operations remain pending for their respective implementation stages.
+**Status:** Project and task APIs, assignments and comments are implemented. Project ownership and task creator/owner deletion authorization are enforced; validation, filtering, pagination and dependent-record handling have backend test coverage.
 
 **Main tasks:**
 
-- Implement project create/list/view/edit/delete operations and task create/list/view/edit/delete operations. Project operations and project-name search are complete; task operations remain pending.
-- Apply approved authorization checks: all authenticated users can list/view/create projects; only the owner edits/deletes a project; all authenticated users create/view/update tasks; only the owner or task creator deletes a task; all authenticated users view/add comments.
-- Enforce task status and priority values/defaults and the task validation limits.
-- Implement the eligible-user listing operation (`GET /projects/{projectId}/eligible-assignees`) to return existing accounts. Any existing account is eligible regardless of project ownership.
-- Implement assignment listing and add/remove operations for any authenticated user; duplicate task/user pairs are prohibited.
-- Implement add/list comments, deriving the author and timestamp on the server and enforcing length/non-whitespace validation.
-- Match request/response fields and HTTP outcomes to `openapi.yaml`; update that contract only if an approved implementation decision requires a documented correction.
-- Add focused service/API tests for valid operations, invalid input, missing/inaccessible resources and denied operations.
+- Project and task create/list/view/update/delete operations are implemented with the documented authorization and validation rules.
+- Task status and priority values/defaults and field limits are enforced.
+- `GET /projects/{projectId}/eligible-assignees` lists existing accounts; any existing account is eligible regardless of project ownership.
+- Assignment listing, add and removal operations are implemented for authenticated users; duplicate task/user pairs are prohibited.
+- Comment creation and listing derive author and timestamp on the server and enforce length/non-whitespace validation.
+- The OpenAPI contract documents the implemented API operations and response behavior.
+- Focused service/API tests cover valid operations, invalid input, missing resources and denied operations; PostgreSQL persistence tests cover writes followed by independent HTTP queries.
 
 **Relevant files/modules:** Project Management, Task Management, Assignments, Comments, shared validation/access protection; endpoints in `openapi.yaml`.
 
 **Dependencies:** Phases 2–3. Approved permission, eligibility and dependent-record rules are documented.
 
-**Deliverables:** Project operations with API-level tests are complete. Backend operations for tasks, assignments and comments remain outstanding.
+**Deliverables:** Project, task, assignment and comment APIs with focused tests are complete.
 
 **Completion verification:** Each operation has successful and relevant failure-path checks; unauthenticated requests are rejected and owner/creator restrictions are enforced only for the specified project/task mutations.
 
-### Phase 5 — Frontend Setup and Application Structure
+### Phase 5 — Frontend Setup and Application Structure — Completed
 
 **Objective:** Create the frontend shell and shared interaction structure for authenticated project work.
 
@@ -128,7 +127,7 @@ The following details remain open and must stay visible during planning. They do
 
 **Completion verification:** Frontend builds and renders the shell; unauthenticated and authenticated navigation states can be exercised against the API or a controlled development environment.
 
-### Phase 6 — Frontend Integration and User Workflows
+### Phase 6 — Frontend Integration and User Workflows — Completed
 
 **Objective:** Connect the interface to the project, task, assignment and comment API workflows.
 
@@ -146,32 +145,34 @@ The following details remain open and must stay visible during planning. They do
 
 **Dependencies:** Phases 3–5.
 
-**Deliverables:** Integrated core user workflows for all required project/task operations, assignments and comments.
+**Deliverables:** Integrated authentication, project/task workflows, assignments and comments.
 
 **Completion verification:** Walk through user stories US01–US04 and US06–US08 using authorized and unauthorized scenarios and confirm the interface reflects persisted API results.
 
-### Phase 7 — Dashboard, Search and Filtering
+### Phase 7 — Dashboard, Search and Filtering — Completed
 
 **Objective:** Deliver the project overview and discovery features for the authenticated user across all projects.
 
 **Main tasks:**
 
-- Implement project-name search using trimmed, case-insensitive partial matching; empty or omitted query returns all projects.
-- Implement task filters by status and priority; when both are supplied, apply AND behavior, and let omitted filters leave results unrestricted.
-- Implement dashboard data and UI for all projects and counts across their tasks for TODO, IN_PROGRESS and DONE, including zero counts. Count each task exactly once.
+- Project-name search uses trimmed, case-insensitive partial matching; empty or omitted query returns all projects.
+- Task filters by status and priority apply AND behavior when both are supplied; omitted filters leave results unrestricted.
+- The frontend dashboard obtains project/task data from existing APIs and computes counts across all projects for TODO, IN_PROGRESS and DONE, including zero counts. It counts each task once.
 - Counts include every priority and assignee and are independent of both; do not calculate percentages or add charts/advanced analytics.
 
-**Relevant files/modules:** Project Management search, Task Management filters, Dashboard module/API, frontend dashboard and list controls; `openapi.yaml` search/filter/dashboard schemas.
+**Relevant files/modules:** Project Management search, Task Management filters, frontend dashboard and list controls; `openapi.yaml` search/filter schemas. No separate dashboard endpoint is exposed.
 
 **Dependencies:** Phases 4–6. Search, filter, access and count rules are already documented.
 
-**Deliverables:** Searchable project list, filterable task list and dashboard with all projects and status counts.
+**Deliverables:** Searchable project list, filterable task list and frontend dashboard with all projects and status counts.
 
 **Completion verification:** Check matching/non-matching search, each filter, combined-filter AND results, all-project visibility, and dashboard totals including empty/zero states.
 
 ### Phase 8 — Testing, Validation and Final Verification
 
 **Objective:** Verify that the integrated implementation meets the documented project baseline and records any remaining limitations.
+
+**Status:** The current full backend suite passed with 80 tests, 0 failures, 0 errors and 3 opt-in PostgreSQL tests skipped because credentials were unavailable. The project controller tests passed with 12 tests; frontend lint and production build passed. The OpenAPI document parsed successfully. Manual scenario evidence is user-reported. A prior PostgreSQL integration run was reported as passing, but the tests must be rerun with the dedicated test database credentials for current execution evidence.
 
 **Main tasks:**
 

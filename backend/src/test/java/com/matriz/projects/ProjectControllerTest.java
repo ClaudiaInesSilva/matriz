@@ -115,6 +115,21 @@ class ProjectControllerTest {
     }
 
     @Test
+    void rejectsEmptyAndWhitespaceOnlyProjectNamesOnCreate() throws Exception {
+        for (String name : List.of("", "   ", "\\t")) {
+            mockMvc.perform(post("/api/projects")
+                            .with(csrf())
+                            .with(authenticated(OWNER_ID))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"name\":\"" + name + "\"}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").isNotEmpty());
+        }
+
+        verifyNoInteractions(projectRepository);
+    }
+
+    @Test
     void listsAllProjectsAndAppliesTrimmedCaseInsensitivePartialSearch() throws Exception {
         Project owned = project(PROJECT_ID, "Alpha plan", OWNER_ID);
         Project other = project(UUID.fromString("60000000-0000-4000-8000-000000000004"), "Beta plan", OTHER_USER_ID);
@@ -166,6 +181,21 @@ class ProjectControllerTest {
 
         assertThat(project.getOwnerId()).isEqualTo(OWNER_ID);
         assertThat(project.getDescription()).isEqualTo("New description");
+    }
+
+    @Test
+    void rejectsEmptyAndWhitespaceOnlyProjectNamesOnUpdateWithoutChangingProject() throws Exception {
+        for (String name : List.of("", "   ", "\\t")) {
+            mockMvc.perform(put("/api/projects/{projectId}", PROJECT_ID)
+                            .with(csrf())
+                            .with(authenticated(OWNER_ID))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"name\":\"" + name + "\"}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").isNotEmpty());
+        }
+
+        verifyNoInteractions(projectRepository);
     }
 
     @Test
