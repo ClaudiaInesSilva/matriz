@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
@@ -147,6 +148,42 @@ class PostgresAssignmentCommentPersistenceTest {
         assertThat(UUID.fromString(JsonPath.read(commentsJson, "$[0].author.userId"))).isEqualTo(author.id());
         assertThat(OffsetDateTime.parse(JsonPath.<String>read(commentsJson, "$[0].createdAt")))
                 .isEqualTo(creationTime.plusNanos(500).truncatedTo(ChronoUnit.MICROS));
+    }
+
+    @Test
+    void persistsTaskAcrossSeparateHttpRequests() throws Exception {
+        TestUser creator = createUser("Task Persistence Creator");
+        Project project = projectRepository.saveAndFlush(new Project(
+                UUID.randomUUID(),
+                "Task persistence " + UUID.randomUUID(),
+                null,
+                creator.id()));
+        MockHttpSession session = login(creator);
+        String title = "Persisted task " + UUID.randomUUID();
+        String description = "Task description " + UUID.randomUUID();
+
+        MvcResult createdTask = mockMvc.perform(post("/api/projects/{projectId}/tasks", project.getId())
+                        .session(session)
+                        .header(csrfHeader(session), csrfToken(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"" + title + "\",\"description\":\"" + description
+                                + "\",\"status\":\"IN_PROGRESS\",\"priority\":\"HIGH\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+        UUID taskId = UUID.fromString(JsonPath.read(createdTask.getResponse().getContentAsString(), "$.taskId"));
+
+        mockMvc.perform(get("/api/tasks/{taskId}", taskId).session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.taskId").value(taskId.toString()))
+                .andExpect(jsonPath("$.projectId").value(project.getId().toString()))
+                .andExpect(jsonPath("$.title").value(title))
+                .andExpect(jsonPath("$.description").value(description))
+                .andExpect(jsonPath("$.status").value("IN_PROGRESS"))
+                .andExpect(jsonPath("$.priority").value("HIGH"));
+
+        UUID persistedCreatorId = jdbcTemplate.queryForObject(
+                "SELECT creator_id FROM tasks WHERE task_id = ?", UUID.class, taskId);
+        assertThat(persistedCreatorId).isEqualTo(creator.id());
     }
 
     private TestUser createUser(String displayName) {

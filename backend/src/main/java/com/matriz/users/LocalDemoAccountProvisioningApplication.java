@@ -11,7 +11,7 @@ public final class LocalDemoAccountProvisioningApplication {
     public static void main(String[] args) {
         try (ConfigurableApplicationContext context = new SpringApplicationBuilder(LocalProvisioningConfiguration.class)
                 .web(WebApplicationType.NONE)
-                .profiles("local")
+                .profiles("local", "local-provisioning")
                 .initializers(new LocalProvisioningEnvironmentInitializer())
                 .run(args)) {
             context.getBean(LocalDemoAccountProvisioner.class).provision(System.console());
