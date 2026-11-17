@@ -186,6 +186,31 @@ class PostgresAssignmentCommentPersistenceTest {
         assertThat(persistedCreatorId).isEqualTo(creator.id());
     }
 
+    @Test
+    void rejectsTaskCreationForMissingProjectWithoutPersistingTask() throws Exception {
+        TestUser creator = createUser("Missing Project Task Creator");
+        MockHttpSession session = login(creator);
+        UUID missingProjectId = UUID.randomUUID();
+        String title = "Missing project task " + UUID.randomUUID();
+
+        mockMvc.perform(post("/api/projects/{projectId}/tasks", missingProjectId)
+                        .session(session)
+                        .header(csrfHeader(session), csrfToken(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"%s"}
+                                """.formatted(title)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").isNotEmpty());
+
+        Long persistedCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM tasks WHERE project_id = ? AND title = ?",
+                Long.class,
+                missingProjectId,
+                title);
+        assertThat(persistedCount).isZero();
+    }
+
     private TestUser createUser(String displayName) {
         UUID id = UUID.randomUUID();
         String username = "persistence-" + UUID.randomUUID();
