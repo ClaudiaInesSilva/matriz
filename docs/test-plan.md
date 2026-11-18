@@ -2,7 +2,7 @@
 
 ## 1. Purpose and Scope
 
-This plan identifies existing test coverage and the minimal proposed coverage for task-title validation, task persistence, authorization and one browser-level workflow.
+This plan identifies existing test coverage and the minimal proposed coverage for task-title validation, task persistence, authorization and browser-level workflows.
 
 The client-confirmed baseline remains organising projects, managing tasks and following work progress. Detailed validation rules, permissions and implementation choices are Matriz project decisions and are not additional client-confirmed requirements.
 
@@ -18,14 +18,14 @@ The backend test framework is JUnit 5 with Spring Boot Test, Spring MockMvc, Ass
 mvn test
 ```
 
-Frontend verification currently consists of:
+Frontend verification currently includes lint and build checks:
 
 ```powershell
 npm run lint
 npm run build
 ```
 
-No Playwright, Cypress, Vitest, Jest or Testing Library framework is currently installed or configured.
+Playwright is installed and configured for the browser E2E scenario described below. Other frontend test frameworks such as Cypress, Vitest, Jest and Testing Library are not configured.
 
 ### PostgreSQL isolation
 
@@ -61,6 +61,8 @@ The test should construct the actual DTO, obtain a Jakarta `Validator`, call `va
 
 ### Existing automated coverage
 
+`backend/src/test/java/com/matriz/tasks/CreateTaskRequestTest.java` provides focused Jakarta Validator coverage for exact boundary and trimming cases.
+
 `backend/src/test/java/com/matriz/tasks/TaskControllerTest.java` already has:
 
 - `rejectsShortBlankAndWhitespaceOnlyTitles`
@@ -85,15 +87,23 @@ The existing task test is the create-and-retrieve scenario to reuse:
 - Test data: unique title, description, status and priority
 - Expected result: POST returns `201`; a separate GET returns the same task fields and project association
 
-### Proposed negative integration scenario
+### Negative integration scenario
+
+The existing persistence test class contains:
+
+- `rejectsTaskCreationForMissingProjectWithoutPersistingTask`
 
 - Scenario: create a task for a nonexistent project
 - Requirement: FR03/FR04 and US03 AC03.5
 - Test data: authenticated user and a random UUID that does not identify a project
 - Expected result: POST returns `404`; no task is created
-- Proposed test name: `persistsNoTaskForMissingProject`
+- Level: opt-in PostgreSQL integration coverage
 
-The mocked controller test `TaskControllerTest.createAndListReturnNotFoundForMissingProject` already verifies the missing-project behavior at the MockMvc level. The proposed addition would verify the same response against real JPA persistence in `matriz_test`.
+The mocked controller test `TaskControllerTest.createAndListReturnNotFoundForMissingProject` already verifies the missing-project behavior at the MockMvc level. The persistence test verifies the same response against real JPA persistence and checks `tasks.project_id` and `tasks.title` in `matriz_test`.
+
+### Execution results
+
+The PostgreSQL integration class was executed successfully with 4 tests, 0 failures, 0 errors and 0 skipped, against `matriz_test`.
 
 ### Data cleanup
 
@@ -126,29 +136,50 @@ The authorization rules to preserve are:
 | Unrelated user cannot delete task | FR04; US03 AC03.6 | `TaskControllerTest.anotherAuthenticatedUserCannotDeleteTask` | None |
 | Task creator can delete task | FR04; US03 AC03.6 | `TaskControllerTest.creatorCanDeleteTask` | None |
 | Project owner can delete another user's task | FR04; US03 AC03.6 | `TaskControllerTest.projectOwnerCanDeleteTaskCreatedByAnotherUser` | None |
-| Unrelated authenticated user updates task | FR04; US03 AC03.2 | No explicit cross-user update test | Proposed MockMvc security test |
+| Authenticated non-owner updates task | FR04; US03 AC03.2 | No explicit cross-user update test | Proposed MockMvc security test; assert that the update succeeds |
 | Unrelated authenticated user views task or project | FR02/FR04 | Project view test and task retrieval test exist | Proposed explicit cross-user assertions only if existing coverage is not sufficient |
 
 Security tests must not expect `403` when an authenticated non-owner updates or views a task.
 
 Existing authentication coverage includes `SecurityConfigurationTest`, `AuthenticationControllerTest` and `MatrizUserDetailsServiceTest`.
 
-## 6. Proposed Playwright E2E Scenario
+## 6. Playwright E2E Scenario
 
-Playwright is not currently installed or operational. The proposed scope is one scenario only:
+### Actual executed coverage
+
+On 2026-11-18, Chromium executed `frontend/e2e/matriz.spec.ts` with `npm run test:e2e`. The result was 1 passed and 0 failed in 4.1 seconds.
+
+The executed scenario:
 
 1. Authenticate.
 2. Open one existing project.
 3. Create a task.
 4. Verify the task appears in the project task list.
 
+The test:
+
+- Logged in as `demo.alex`.
+- Opened the seeded project.
+- Created a uniquely titled task.
+- Verified the task row.
+- Opened the task detail route.
+- Deleted the task through the UI and accepted the browser confirmation dialog.
+- Verified that the task row was removed.
+
+The backend was running against `matriz_test` during the executed run. Cleanup succeeded for the created task; no project or user cleanup was performed.
+
+The test implementation attempts cleanup again from the task detail route if normal cleanup has not completed. If a cleanup failure occurs alongside an original test failure, it adds a `cleanup-failure` Playwright test annotation while preserving the original failure.
+
+### Configuration
+
 Required environment variables:
 
-- `PLAYWRIGHT_BASE_URL`
 - `MATRIZ_E2E_USERNAME`
 - `MATRIZ_E2E_PASSWORD`
 - `MATRIZ_E2E_PROJECT_ID`
 - Optionally `MATRIZ_E2E_TASK_TITLE_PREFIX`
+
+The Playwright configuration supports the local Vite URL `http://127.0.0.1:5173` only.
 
 Passwords must not be hardcoded.
 
@@ -175,7 +206,7 @@ The test must use Playwright locator auto-waiting and must not use fixed sleeps.
 - MockMvc controller tests use mock repositories and authenticated principals.
 - PostgreSQL integration tests use UUID-based users, projects and titles.
 - E2E test data must use one existing project selected by environment variable and a unique task title.
-- Playwright-created tasks should be deleted only by the test cleanup logic for that task, if cleanup is approved and supported; otherwise document the remaining test record as uncleaned rather than claiming cleanup.
+- The executed Playwright scenario deleted only the task it created through the UI. Its task row removal was verified. A retained test record is unnecessary unless future cleanup fails.
 
 Only `matriz_test` may be used for PostgreSQL integration data. Never provision, reset, truncate or modify `matriz_db`.
 
@@ -210,25 +241,25 @@ npm run lint
 npm run build
 ```
 
-No Playwright command is currently available until the framework is explicitly approved and configured.
+The Playwright command is:
+
+```powershell
+Set-Location .\frontend
+npm run test:e2e
+```
 
 ## 9. Known Limitations
 
 ### Existing limitations
 
-- Frontend behavior has no automated test suite.
+- Frontend unit/component test infrastructure is not implemented; the implemented Playwright scenario provides browser-level coverage.
 - PostgreSQL integration tests are skipped unless dedicated test credentials are configured.
 - Controller tests largely use mocked repositories and do not prove real database persistence.
 - PostgreSQL tests verify persistence across separate HTTP requests, not backend restart persistence.
 - The PostgreSQL test class does not currently implement a cleanup framework for all created records.
-- The previous targeted PostgreSQL run is recorded, but no test run was performed while preparing this plan.
-- No Playwright or other browser-test framework is installed.
+- No Playwright browser run outside the 2026-11-18 result is recorded here.
 
 ### Tests not yet implemented
 
-- Focused Jakarta Validator test for `CreateTaskRequest`
-- PostgreSQL negative test for a nonexistent project
-- Cross-user task update security test
+- Cross-user task update test confirming that an authenticated non-owner can successfully update a task
 - Explicit cross-user task/project view assertions if they are not considered covered by existing tests
-- Single Playwright login, open project, create task and verify task scenario
-- PostgreSQL cleanup implementation within the existing integration test class
