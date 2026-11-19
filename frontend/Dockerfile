@@ -6,6 +6,8 @@ RUN npm ci
 COPY index.html vite.config.ts tsconfig*.json ./
 COPY public ./public
 COPY src ./src
+ARG VITE_DEMO_LOGIN_ENABLED=false
+ENV VITE_DEMO_LOGIN_ENABLED=${VITE_DEMO_LOGIN_ENABLED}
 RUN npm run build
 
 FROM nginx:1.28-alpine AS runtime

@@ -9,6 +9,7 @@ export interface AuthContextValue {
   error: string | null
   checkSession: () => Promise<void>
   signIn: (username: string, password: string) => Promise<void>
+  signInAsDemo: (username: string) => Promise<void>
   signOut: () => Promise<void>
 }
 

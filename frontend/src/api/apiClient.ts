@@ -276,6 +276,14 @@ export const apiClient = {
     }
   },
 
+  async demoLogin(username: string) {
+    return request<AuthenticatedUser>('/auth/demo-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username }),
+    })
+  },
+
   logout() {
     return request<void>('/auth/logout', { method: 'POST' })
   },

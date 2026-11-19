@@ -51,6 +51,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.GET, "/api/auth/csrf").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/demo-login").permitAll()
                         .anyRequest().authenticated())
                 .logout(logout -> logout
                         .logoutRequestMatcher(authenticatedLogoutMatcher())
