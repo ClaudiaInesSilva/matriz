@@ -10,6 +10,9 @@ import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
 class LocalDatabaseUrlGuardTest {
+    private static final String COMPOSE_DATABASE_URL = "jdbc:postgresql://127.0.0.1:5433/matriz_compose";
+    private static final String COMPOSE_DATABASE_USERNAME = "matriz_compose_app";
+
     @Test
     void permitsSupportedLoopbackPostgresUrlsAndPinsTheValidatedUrl() {
         for (String jdbcUrl : new String[] {
@@ -152,7 +155,100 @@ class LocalDatabaseUrlGuardTest {
         assertFalse(environment.getProperty("spring.flyway.enabled", Boolean.class, true));
     }
 
+    @Test
+    void permitsOnlyTheExactComposeDatabaseAndApplicationRoleAndPinsBoth() {
+        MockEnvironment environment = composeEnvironment();
+
+        assertEquals(COMPOSE_DATABASE_URL, LocalDatabaseUrlGuard.validateAndPinCompose(environment));
+        assertEquals(COMPOSE_DATABASE_URL, environment.getProperty("spring.datasource.url"));
+        assertEquals(COMPOSE_DATABASE_USERNAME, environment.getProperty("spring.datasource.username"));
+        assertFalse(environment.getProperty("spring.flyway.enabled", Boolean.class, true));
+    }
+
+    @Test
+    void rejectsComposeTargetsForOtherDatabasesHostsPortsAndRoles() {
+        for (String jdbcUrl : new String[] {
+            "jdbc:postgresql://127.0.0.1:5433/matriz_db",
+            "jdbc:postgresql://127.0.0.1:5433/matriz_test",
+            "jdbc:postgresql://127.0.0.1:5433/other",
+            "jdbc:postgresql://localhost:5433/matriz_compose",
+            "jdbc:postgresql://127.0.0.1:5432/matriz_compose",
+            "jdbc:postgresql://database:5432/matriz_compose"
+        }) {
+            MockEnvironment environment = composeEnvironment();
+            environment.setProperty("spring.datasource.url", jdbcUrl);
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> LocalDatabaseUrlGuard.validateAndPinCompose(environment), jdbcUrl);
+        }
+
+        MockEnvironment wrongRole = composeEnvironment();
+        wrongRole.setProperty("spring.datasource.username", "matriz_compose_admin");
+        assertThrows(IllegalArgumentException.class,
+                () -> LocalDatabaseUrlGuard.validateAndPinCompose(wrongRole));
+    }
+
+    @Test
+    void rejectsMismatchedExplicitDatasourceUrlOverrides() {
+        for (String propertyName : new String[] {"DB_URL", "SPRING_DATASOURCE_URL"}) {
+            for (String jdbcUrl : new String[] {
+                "jdbc:postgresql://127.0.0.1:5433/matriz_db",
+                "jdbc:postgresql://127.0.0.1:5433/matriz_test",
+                "jdbc:postgresql://db.example.com:5432/matriz_compose"
+            }) {
+                MockEnvironment environment = composeEnvironment();
+                environment.setProperty(propertyName, jdbcUrl);
+
+                assertThrows(IllegalArgumentException.class,
+                        () -> LocalDatabaseUrlGuard.validateAndPinCompose(environment),
+                        propertyName);
+            }
+        }
+    }
+
+    @Test
+    void rejectsMismatchedExplicitDatasourceUsernameOverrides() {
+        for (String propertyName : new String[] {"DB_USERNAME", "SPRING_DATASOURCE_USERNAME"}) {
+            MockEnvironment environment = composeEnvironment();
+            environment.setProperty(propertyName, "matriz_compose_admin");
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> LocalDatabaseUrlGuard.validateAndPinCompose(environment),
+                    propertyName);
+        }
+    }
+
+    @Test
+    void composeValidationRetainsDatasourceRedirectionProtections() {
+        MockEnvironment hikariEnvironment = composeEnvironment();
+        hikariEnvironment.getPropertySources().addFirst(new MapPropertySource(
+                "override", Map.of("spring.datasource.hikari.jdbc-url",
+                        "jdbc:postgresql://127.0.0.1:5433/matriz_compose")));
+        assertThrows(IllegalArgumentException.class,
+                () -> LocalDatabaseUrlGuard.validateAndPinCompose(hikariEnvironment));
+
+        MockEnvironment jsonEnvironment = composeEnvironment();
+        jsonEnvironment.setProperty("SPRING_APPLICATION_JSON", "{}");
+        assertThrows(IllegalArgumentException.class,
+                () -> LocalDatabaseUrlGuard.validateAndPinCompose(jsonEnvironment));
+    }
+
+    @Test
+    void rejectsResolvedUsernameOverrideEvenWhenComposeProfileIsNotActive() {
+        MockEnvironment environment = composeEnvironment();
+        environment.setProperty("spring.datasource.username", "another_role");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> LocalDatabaseUrlGuard.validateAndPinCompose(environment));
+    }
+
     private static MockEnvironment environmentWithUrl(String jdbcUrl) {
         return new MockEnvironment().withProperty("spring.datasource.url", jdbcUrl);
+    }
+
+    private static MockEnvironment composeEnvironment() {
+        return new MockEnvironment()
+                .withProperty("spring.datasource.url", COMPOSE_DATABASE_URL)
+                .withProperty("spring.datasource.username", COMPOSE_DATABASE_USERNAME);
     }
 }

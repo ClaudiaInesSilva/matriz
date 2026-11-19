@@ -19,14 +19,20 @@ The backend uses authenticated sessions and CSRF protection. The local demo user
 
 ```text
 backend/                         Spring Boot application and Maven build
+  Dockerfile                     Backend Docker image
   src/main/java/                 Application and JPA mappings
   src/main/resources/
     application.properties       Database and persistence configuration
     db/migration/                Versioned Flyway SQL migrations
+database/
+  init/                          Database initialisation scripts for Compose
 frontend/                        React, TypeScript and Vite application
+  Dockerfile                     Frontend Docker image
 docs/                             Requirements, design and project documentation
+compose.yaml                     Docker Compose services
+compose.provisioning.yaml        Compose override for demo-account provisioning
 openapi.yaml                      Proposed REST API contract
-.env.example                      Fictional local configuration template
+.env.example                      Configuration template for local and Compose
 ```
 
 ## Prerequisites
@@ -36,9 +42,10 @@ openapi.yaml                      Proposed REST API contract
 - [Apache Maven](https://maven.apache.org/install.html) installed and available as `mvn`. The repository does not include a Maven
   Wrapper or pin a Maven version.
 - [PostgreSQL for Windows](https://www.postgresql.org/download/windows/) 18 (18.7 is the version verified for this project), with its service
-  running. The PostgreSQL command-line client (`psql`) is needed for the setup
-  commands below.
+  running. The PostgreSQL command-line client (`psql`) is needed for the local
+  database setup below.
 - [Node.js 24](https://nodejs.org/en/download) (npm 11 is included with the selected Node.js installation).
+- [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/) for running the application with Docker Compose.
 
 The commands below are for Windows PowerShell, run from the cloned repository
 root unless a step says otherwise. Check that the tools are available:
@@ -146,6 +153,56 @@ own local-only passwords for `demo.alex` and `demo.sam`; there are no default
 demo passwords. The application stores password hashes, not plaintext
 passwords. After provisioning succeeds, this session can be closed.
 
+#### Compose database demo-account provisioning
+
+The Compose database uses a separate, strict provisioning launcher. It accepts
+only `matriz_compose` through `127.0.0.1:5433` and the `matriz_compose_app`
+role. It does not use the PostgreSQL administrator account. All commands below
+run from the repository root unless stated otherwise. Use the temporary
+loopback-only Compose override to expose the database port:
+
+```powershell
+docker compose -f compose.yaml -f compose.provisioning.yaml up -d --force-recreate database
+```
+
+In an interactive PowerShell session, enter the application-role password at
+the secure prompt, then run the dedicated launcher from the `backend` directory.
+Passwords are not command arguments; the launcher prompts interactively for
+demo-account passwords.
+
+```powershell
+$securePassword = Read-Host 'Enter the local matriz_compose_app password' -AsSecureString
+try {
+    $env:DB_URL = 'jdbc:postgresql://127.0.0.1:5433/matriz_compose'
+    $env:DB_USERNAME = 'matriz_compose_app'
+    $env:DB_PASSWORD = [System.Net.NetworkCredential]::new('', $securePassword).Password
+
+    Set-Location .\backend
+    mvn spring-boot:run "-Dspring-boot.run.main-class=com.matriz.users.ComposeDemoAccountProvisioningApplication"
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Compose demo-account provisioning failed.'
+    }
+}
+finally {
+    Remove-Item Env:DB_URL, Env:DB_USERNAME, Env:DB_PASSWORD -ErrorAction SilentlyContinue
+    $securePassword.Dispose()
+}
+```
+
+After provisioning, return to the repository root and recreate the database
+service with the normal Compose configuration to remove the published port.
+This keeps the `matriz_compose_data` volume; do not use `down -v`.
+
+```powershell
+Set-Location ..
+docker compose -f compose.yaml up -d --force-recreate database
+```
+
+Do not point this launcher at `matriz_db` or `matriz_test`. The Compose-specific
+guard checks the final datasource URL and username, explicit URL and username
+overrides, and the existing datasource redirection protections before
+Spring can create a datasource.
+
 ### 3. Frontend development server
 
 In a **third PowerShell session**, install the locked frontend dependencies
@@ -174,6 +231,123 @@ password. The frontend detects an existing session, displays the signed-in
 user, and supports signing out. Session authentication uses an HttpOnly cookie;
 the API client obtains and sends CSRF tokens for state-changing requests.
 
+## Run with Docker Compose
+
+This section describes how to run the complete application using Docker Compose
+on a fresh clone. The Compose stack includes three services: `database`
+(PostgreSQL), `backend` (Spring Boot) and `frontend` (nginx serving the
+compiled React application). The frontend is accessible at
+`http://localhost:8081`.
+
+### Prerequisites
+
+Docker Desktop for Windows must be installed and running. The commands below
+use Windows PowerShell from the repository root.
+
+### 1. Configure environment variables
+
+Copy the example environment file and replace the Compose password placeholders
+with locally chosen values:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Edit `.env` and replace both Compose passwords at the bottom of the file:
+
+- `MATRIZ_COMPOSE_ADMIN_PASSWORD` — password for the PostgreSQL administrator
+  role inside the Compose database container.
+- `MATRIZ_COMPOSE_DB_PASSWORD` — password for the application role
+  `matriz_compose_app` that the backend uses to connect.
+
+Choose strong, local-only passwords. The `.env` file must not be committed to
+Git; it is listed in `.gitignore`.
+
+### 2. Build the Docker images
+
+Build the backend and frontend images from the repository root:
+
+```powershell
+docker build -t matriz-backend:0.1.0 ./backend
+docker build -t matriz-frontend:0.1.0 ./frontend
+```
+
+### 3. Start the database
+
+Start only the database service:
+
+```powershell
+docker compose up -d database
+```
+
+Wait for the database to become healthy before continuing. Check the status
+with `docker compose ps`.
+
+### 4. Run the Flyway migrations
+
+Flyway migrations run when the Spring Boot backend starts, not when the
+database container starts. Start the backend once so it creates the schema
+and seeds `demo.alex` and `demo.sam`, then stop it:
+
+```powershell
+docker compose up -d backend
+```
+
+Wait for the backend to become healthy, then stop it:
+
+```powershell
+docker compose stop backend
+```
+
+### 5. Provision the demo accounts
+
+The database migrations create `demo.alex` and `demo.sam` without usable
+passwords. Use the Compose-specific provisioning procedure to set passwords
+interactively. The provisioning override temporarily exposes PostgreSQL only on
+`127.0.0.1:5433` so the provisioning launcher can reach the container.
+
+Follow the instructions in the **Compose database demo-account provisioning**
+subsection under **Demo-account provisioning** above. That section runs from
+the repository root and transitions to the `backend` directory before
+executing the Maven command. In short:
+
+1. Start the database with the provisioning override to expose the port.
+2. Run the provisioning launcher from the `backend` directory, which prompts
+   for passwords for each demo account.
+3. Return to the repository root and recreate the database with the normal
+   configuration to remove the exposed port.
+
+Choose your own passwords for `demo.alex` and `demo.sam`; no default demo
+passwords are provided. After provisioning, the passwords are stored as hashes
+in the database.
+
+### 6. Start the complete application
+
+Start all three Compose services:
+
+```powershell
+docker compose up -d
+```
+
+Wait for the backend and frontend to become healthy. The frontend is available
+at `http://localhost:8081`.
+
+### 7. Sign in
+
+Open `http://localhost:8081` and sign in with either `demo.alex` or
+`demo.sam` using the password you set during provisioning.
+
+### Stopping the application
+
+To stop the services without removing the database volume, run:
+
+```powershell
+docker compose down
+```
+
+Do not use `docker compose down -v`, because it deletes the `matriz_compose_data`
+volume and all application data.
+
 ## Troubleshooting
 
 - **PostgreSQL connection refused:** Start the PostgreSQL Windows service and
@@ -197,6 +371,17 @@ the API client obtains and sends CSRF tokens for state-changing requests.
 - **Frontend cannot reach the backend:** Confirm the backend is running at
   `http://localhost:8080`. If it uses another host or port, set
   `VITE_API_PROXY_TARGET` before starting or restarting Vite.
+- **Compose services will not start:** Confirm Docker Desktop is running and
+  check `docker compose ps` for service health status. Ensure `.env` exists
+  and both `MATRIZ_COMPOSE_ADMIN_PASSWORD` and `MATRIZ_COMPOSE_DB_PASSWORD`
+  have been replaced with real values.
+- **Compose demo login is rejected:** Run the provisioning procedure described
+  in the **Provision the demo accounts** step above, then sign in with the
+  password you set. The database migrations create the accounts without usable
+  passwords.
+- **Compose database connection errors after recreating the container:** Stale
+  backend connections may appear briefly. Recreate the backend service with
+  `docker compose up -d --force-recreate backend` to re-establish connections.
 
 ## Build and checks
 

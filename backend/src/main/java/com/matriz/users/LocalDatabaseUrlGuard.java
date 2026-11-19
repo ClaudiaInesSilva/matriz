@@ -14,6 +14,9 @@ import org.springframework.core.env.PropertySource;
 /** Validates and pins the datasource configuration used by the local provisioning context. */
 public final class LocalDatabaseUrlGuard {
     private static final String LOCKED_CONFIGURATION = "matrizLocalProvisioningConfiguration";
+    private static final String COMPOSE_LOCKED_CONFIGURATION = "matrizComposeProvisioningConfiguration";
+    private static final String COMPOSE_DATABASE_URL = "jdbc:postgresql://127.0.0.1:5433/matriz_compose";
+    private static final String COMPOSE_DATABASE_USERNAME = "matriz_compose_app";
     private static final Pattern LOOPBACK_AUTHORITY = Pattern.compile(
             "(?i)(localhost|127\\.0\\.0\\.1|\\[::1\\])(?::([0-9]{1,5}))?");
     private static final Pattern DATABASE_PATH = Pattern.compile("/[A-Za-z0-9._~-]+");
@@ -31,6 +34,43 @@ public final class LocalDatabaseUrlGuard {
      * then pins that exact value before context refresh creates the datasource.
      */
     public static String validateAndPin(ConfigurableEnvironment environment) {
+        validateDatasourceSafety(environment);
+
+        String resolvedUrl = environment.getProperty("spring.datasource.url");
+        environment.getPropertySources().addFirst(new MapPropertySource(LOCKED_CONFIGURATION, Map.of(
+                "spring.datasource.url", resolvedUrl,
+                "spring.datasource.driver-class-name", "org.postgresql.Driver",
+                "spring.flyway.enabled", "false")));
+        return resolvedUrl;
+    }
+
+    /**
+     * Applies the local provisioning safety checks and then restricts Compose provisioning
+     * to the temporary loopback endpoint and the non-superuser application role.
+     */
+    public static String validateAndPinCompose(ConfigurableEnvironment environment) {
+        validateDatasourceSafety(environment);
+
+        String resolvedUrl = environment.getProperty("spring.datasource.url");
+        requireComposeDatabaseUrl(resolvedUrl);
+        requireComposeDatabaseUsername(environment.getProperty("spring.datasource.username"));
+
+        for (String propertyName : new String[] {"DB_URL", "SPRING_DATASOURCE_URL"}) {
+            requireComposeDatabaseUrlIfConfigured(environment, propertyName);
+        }
+        for (String propertyName : new String[] {"DB_USERNAME", "SPRING_DATASOURCE_USERNAME"}) {
+            requireComposeDatabaseUsernameIfConfigured(environment, propertyName);
+        }
+
+        environment.getPropertySources().addFirst(new MapPropertySource(COMPOSE_LOCKED_CONFIGURATION, Map.of(
+                "spring.datasource.url", COMPOSE_DATABASE_URL,
+                "spring.datasource.username", COMPOSE_DATABASE_USERNAME,
+                "spring.datasource.driver-class-name", "org.postgresql.Driver",
+                "spring.flyway.enabled", "false")));
+        return COMPOSE_DATABASE_URL;
+    }
+
+    private static void validateDatasourceSafety(ConfigurableEnvironment environment) {
         if (environment.getProperty("SPRING_APPLICATION_JSON") != null) {
             throw new IllegalArgumentException("Demo account provisioning does not accept SPRING_APPLICATION_JSON overrides");
         }
@@ -58,12 +98,34 @@ public final class LocalDatabaseUrlGuard {
 
         String resolvedUrl = environment.getProperty("spring.datasource.url");
         requireLoopbackPostgresUrl(resolvedUrl);
+    }
 
-        environment.getPropertySources().addFirst(new MapPropertySource(LOCKED_CONFIGURATION, Map.of(
-                "spring.datasource.url", resolvedUrl,
-                "spring.datasource.driver-class-name", "org.postgresql.Driver",
-                "spring.flyway.enabled", "false")));
-        return resolvedUrl;
+    private static void requireComposeDatabaseUrlIfConfigured(
+            ConfigurableEnvironment environment, String propertyName) {
+        if (environment.containsProperty(propertyName)) {
+            requireComposeDatabaseUrl(environment.getProperty(propertyName));
+        }
+    }
+
+    private static void requireComposeDatabaseUsernameIfConfigured(
+            ConfigurableEnvironment environment, String propertyName) {
+        if (environment.containsProperty(propertyName)) {
+            requireComposeDatabaseUsername(environment.getProperty(propertyName));
+        }
+    }
+
+    private static void requireComposeDatabaseUrl(String jdbcUrl) {
+        if (!COMPOSE_DATABASE_URL.equals(jdbcUrl)) {
+            throw new IllegalArgumentException(
+                    "Compose demo provisioning requires the configured matriz_compose loopback database target");
+        }
+    }
+
+    private static void requireComposeDatabaseUsername(String username) {
+        if (!COMPOSE_DATABASE_USERNAME.equals(username)) {
+            throw new IllegalArgumentException(
+                    "Compose demo provisioning requires the matriz_compose_app database role");
+        }
     }
 
     private static void rejectHikariOverrides(ConfigurableEnvironment environment) {

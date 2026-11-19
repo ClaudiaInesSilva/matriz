@@ -1,0 +1,46 @@
+services:
+  database:
+    image: postgres:18.7
+    environment:
+      POSTGRES_DB: matriz_compose
+      POSTGRES_USER: matriz_compose_admin
+      POSTGRES_PASSWORD: ${MATRIZ_COMPOSE_ADMIN_PASSWORD:?Set MATRIZ_COMPOSE_ADMIN_PASSWORD in .env}
+      MATRIZ_COMPOSE_DB_PASSWORD: ${MATRIZ_COMPOSE_DB_PASSWORD:?Set MATRIZ_COMPOSE_DB_PASSWORD in .env}
+    volumes:
+      - matriz_compose_data:/var/lib/postgresql
+      - ./database/init/01-create-app-role.sql:/docker-entrypoint-initdb.d/01-create-app-role.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    image: matriz-backend:0.1.0
+    environment:
+      SPRING_PROFILES_ACTIVE: compose
+      DB_URL: jdbc:postgresql://database:5432/matriz_compose
+      DB_USERNAME: matriz_compose_app
+      DB_PASSWORD: ${MATRIZ_COMPOSE_DB_PASSWORD:?Set MATRIZ_COMPOSE_DB_PASSWORD in .env}
+      MATRIZ_SESSION_COOKIE_SECURE: "false"
+    depends_on:
+      database:
+        condition: service_healthy
+
+  frontend:
+    image: matriz-frontend:0.1.0
+    ports:
+      - "8081:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  matriz_compose_data:

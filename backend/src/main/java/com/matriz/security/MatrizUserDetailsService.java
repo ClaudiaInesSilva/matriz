@@ -29,7 +29,7 @@ public class MatrizUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         if (DemoAccountPolicy.isReservedUsername(username)
-                && (!demoAuthenticationEnabled || !environment.acceptsProfiles(Profiles.of("local")))) {
+                && (!demoAuthenticationEnabled || !environment.acceptsProfiles(Profiles.of("local", "compose")))) {
             throw unavailableAccount();
         }
 

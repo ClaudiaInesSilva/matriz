@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.Profiles;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 /** Minimal Spring context for the one-off local demo-account provisioning command. */
@@ -23,7 +24,7 @@ public class LocalProvisioningConfiguration {
     @Bean(destroyMethod = "close")
     @Profile("local")
     DataSource localProvisioningDataSource(ConfigurableEnvironment environment) {
-        String validatedUrl = LocalDatabaseUrlGuard.validateAndPin(environment);
+        String validatedUrl = validateDatasourceConfiguration(environment);
 
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl(validatedUrl);
@@ -31,5 +32,12 @@ public class LocalProvisioningConfiguration {
         hikariConfig.setUsername(environment.getProperty("spring.datasource.username"));
         hikariConfig.setPassword(environment.getProperty("spring.datasource.password"));
         return new HikariDataSource(hikariConfig);
+    }
+
+    static String validateDatasourceConfiguration(ConfigurableEnvironment environment) {
+        if (environment.acceptsProfiles(Profiles.of("compose-provisioning"))) {
+            return LocalDatabaseUrlGuard.validateAndPinCompose(environment);
+        }
+        return LocalDatabaseUrlGuard.validateAndPin(environment);
     }
 }
