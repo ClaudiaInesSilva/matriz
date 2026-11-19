@@ -138,6 +138,18 @@ class SecurityConfigurationTest {
     }
 
     @Test
+    void crossOriginRequestRejectedWhenCorsOriginNotConfigured() throws Exception {
+        mockMvc.perform(get("/api/probe/private")
+                        .header("Origin", "https://matriz-frontend.onrender.com"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(result -> {
+                    String allowOrigin = result.getResponse().getHeader("Access-Control-Allow-Origin");
+                    org.junit.jupiter.api.Assertions.assertNull(allowOrigin,
+                            "no CORS headers should be present when no origins are configured");
+                });
+    }
+
+    @Test
     void authenticationStrategyRotatesSessionIdAndClearsPriorCsrfToken() {
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();

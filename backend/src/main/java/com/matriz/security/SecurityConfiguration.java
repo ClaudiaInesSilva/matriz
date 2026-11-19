@@ -1,6 +1,7 @@
 package com.matriz.security;
 
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -32,17 +33,24 @@ import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler
 import jakarta.servlet.DispatcherType;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfiguration {
+    @Value("${matriz.cors.allowed-origins:}")
+    String corsAllowedOrigins;
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             SecurityContextRepository securityContextRepository,
             CsrfTokenRepository csrfTokenRepository,
-            SessionAuthenticationStrategy sessionAuthenticationStrategy) throws Exception {
+            SessionAuthenticationStrategy sessionAuthenticationStrategy,
+            CorsConfigurationSource corsConfigurationSource) throws Exception {
         http.securityContext(securityContext -> securityContext
                         .securityContextRepository(securityContextRepository))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionAuthenticationStrategy(sessionAuthenticationStrategy))
@@ -109,6 +117,24 @@ public class SecurityConfiguration {
         HttpSessionCsrfTokenRepository repository = new HttpSessionCsrfTokenRepository();
         repository.setHeaderName("X-CSRF-TOKEN");
         return repository;
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        if (corsAllowedOrigins == null || corsAllowedOrigins.isBlank()) {
+            return request -> null;
+        }
+        CorsConfiguration config = new CorsConfiguration();
+        for (String origin : corsAllowedOrigins.split(",")) {
+            config.addAllowedOrigin(origin.trim());
+        }
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
+        config.setAllowedHeaders(List.of("Content-Type", "Accept", "Authorization", "X-CSRF-TOKEN"));
+        config.setAllowCredentials(true);
+        config.setExposedHeaders(List.of("X-CSRF-TOKEN"));
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     /** Shared session fixation and CSRF invalidation policy for authentication. */
