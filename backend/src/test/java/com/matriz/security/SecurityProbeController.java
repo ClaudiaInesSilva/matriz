@@ -24,4 +24,9 @@ class SecurityProbeController {
     String stateChange() {
         return "state change accepted";
     }
+
+    @GetMapping("/api/probe/throw-error")
+    String throwError() {
+        throw new RuntimeException("Intentional error for testing ERROR dispatcher");
+    }
 }

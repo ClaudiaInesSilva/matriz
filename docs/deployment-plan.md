@@ -159,6 +159,16 @@ The following environment variables must be configured on the Render frontend se
 
 Render deployment requires creating the Render services, configuring environment variables, and provisioning the demo accounts in the Render database. These steps have not been performed.
 
+### Post-deployment verification
+
+After deploying the DispatcherType.ERROR fix to Render, verify the following:
+
+1. Navigate to the frontend URL.
+2. Open browser DevTools → Network tab.
+3. Verify that `GET /api/auth/csrf` returns HTTP 200 with a JSON body containing `token` and `headerName`.
+4. Verify that the demo login flow completes (POST `/api/auth/demo-login` is sent and returns 200).
+5. Verify that protected endpoints still require authentication (GET `/api/auth/me` returns 401 when not logged in).
+
 ## 8. Database Isolation
 
 | Environment | Database | Role | Purpose |
