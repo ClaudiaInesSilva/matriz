@@ -47,7 +47,7 @@ Authentication uses an HttpOnly, server-side `JSESSIONID` session. State-changin
 | `frontend/.dockerignore` | Exclude dependencies, build output, test artifacts and local environment files |
 | `frontend/nginx.conf.template` | Nginx configuration template: serves static files and proxies `/api/` to the backend |
 
-The Nginx configuration template uses environment variables `${PORT}` and `${BACKEND_URL}` for runtime flexibility. The official Nginx Docker image processes `/etc/nginx/templates/*.template` at container startup, performing environment substitution to generate the active `nginx.conf`.
+The Nginx configuration template uses environment variables `${PORT}`, `${BACKEND_URL}`, and `${BACKEND_HOST}` for runtime flexibility. The official Nginx Docker image processes `/etc/nginx/templates/*.template` at container startup, performing environment substitution to generate the active `nginx.conf`.
 
 ### Docker Compose
 
@@ -96,6 +96,7 @@ Demo accounts `demo.alex` and `demo.sam` are seeded by migrations without usable
 |---|---|---|---|
 | `PORT` | `frontend/Dockerfile` ENV | `80` | Nginx listen port inside the container |
 | `BACKEND_URL` | `frontend/Dockerfile` ENV | `http://backend:8080` | Backend URL for Nginx `/api/` reverse proxy |
+| `BACKEND_HOST` | `frontend/Dockerfile` ENV | `backend` | Backend hostname for the HTTP `Host` header sent to the upstream (no scheme or port) |
 
 ### Frontend development variables (Vite)
 
@@ -142,6 +143,19 @@ Render deployment is prepared but has not yet been completed. The following arti
 - **Backend:** `backend/src/main/resources/application-render.properties` activates the `render` Spring profile, enabling demo-account auto-login (`matriz.demo-accounts.auto-login-enabled=true`) and setting `server.servlet.session.cookie.secure=true`.
 - **Frontend:** `frontend/nginx.conf.template` supports environment-variable-based backend URL configuration via `${BACKEND_URL}`, allowing the Nginx proxy to reach the Render backend service.
 - **Demo login endpoint:** `POST /api/auth/demo-login` is available only when the `render` profile is active and `matriz.demo-accounts.auto-login-enabled=true`. It accepts `demo.alex` or `demo.sam` usernames without a password.
+
+### Nginx Host header configuration
+
+The Nginx template sends `Host ${BACKEND_HOST}` to the backend upstream. The `BACKEND_HOST` variable holds only the backend hostname without scheme or port. This is needed because Nginx's `$proxy_host` variable may include the default HTTPS port `:443` for HTTPS upstreams, and sending a `Host` header with `:443` has been observed to cause Cloudflare to drop the request without responding. Using `BACKEND_HOST` explicitly controls the upstream `Host` header to avoid this issue.
+
+### Render environment variables
+
+The following environment variables must be configured on the Render frontend service:
+
+| Variable | Value |
+|---|---|
+| `BACKEND_URL` | `https://matriz-backend-yx6z.onrender.com` |
+| `BACKEND_HOST` | `matriz-backend-yx6z.onrender.com` |
 
 Render deployment requires creating the Render services, configuring environment variables, and provisioning the demo accounts in the Render database. These steps have not been performed.
 
