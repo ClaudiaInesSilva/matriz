@@ -98,6 +98,56 @@ paths:
         '403':
           description: CSRF token is missing or invalid.
 
+  /auth/demo-login:
+    post:
+      tags:
+        - Authentication
+      summary: Demo account auto-login (Render only)
+      description: |
+        Authenticates a reserved demo account without requiring a password.
+        This endpoint is restricted to the `render` Spring profile and
+        requires `matriz.demo-accounts.auto-login-enabled=true`. It returns
+        HTTP 403 when the profile or property guard is not satisfied.
+
+        Accepted usernames are `demo.alex` and `demo.sam`. The endpoint
+        establishes a server-side session, rotates the session ID, and
+        regenerates the CSRF token, the same as standard login.
+      operationId: demoLogin
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemoLoginRequest'
+      responses:
+        '200':
+          description: Demo login successful. The server establishes a session cookie.
+          headers:
+            Set-Cookie:
+              description: Session cookie managed by the server.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedUser'
+        '400':
+          description: The requested username is not a valid demo account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: |
+            CSRF token is missing or invalid, or the demo-login endpoint is
+            not available (the `render` profile is not active or auto-login
+            is disabled).
+
   /auth/me:
     get:
       tags:
@@ -617,6 +667,18 @@ components:
           type: string
           minLength: 1
           format: password
+
+    DemoLoginRequest:
+      type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          enum:
+            - demo.alex
+            - demo.sam
+          description: Reserved demo account username. Accepted values are `demo.alex` and `demo.sam`.
 
     AuthenticatedUser:
       type: object

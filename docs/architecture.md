@@ -6,6 +6,96 @@ Matriz uses a modular monolith: one Spring Boot backend deployment organized int
 
 One backend deployment keeps deployment and operational complexity low. Internal modules separate responsibilities and support maintainability. Microservices would add communication and deployment complexity that is unnecessary for the current project scope.
 
+## System architecture diagram
+
+```mermaid
+graph TB
+    subgraph LocalDev["Local Development"]
+        VITE["Vite Dev Server"]
+        UI_DEV["React UI Components"]
+        API_DEV["API Client (CSRF-aware)"]
+    end
+
+    subgraph Frontend["React Frontend (Vite / TypeScript)"]
+        UI["React UI Components"]
+        API["API Client (CSRF-aware)"]
+    end
+
+    subgraph Proxy["Nginx Reverse Proxy (Docker Compose / Render)"]
+        NGINX["nginx.conf.template"]
+    end
+
+    subgraph Backend["Spring Boot Backend (Modular Monolith)"]
+        subgraph Security["Security Module"]
+            AUTH["Authentication Controller"]
+            CSRF["CSRF Protection"]
+            SESSION["Session Management"]
+        end
+        subgraph Domains["Domain Modules"]
+            USERS["Users"]
+            PROJECTS["Projects"]
+            TASKS["Tasks"]
+            ASSIGNMENTS["Assignments"]
+            COMMENTS["Comments"]
+        end
+    end
+
+    subgraph Persistence["Persistence"]
+        JPA["Spring Data JPA / Hibernate"]
+        FLYWAY["Flyway Migrations"]
+    end
+
+    subgraph Database["PostgreSQL 18.7"]
+        DB[(matriz_db / matriz_compose)]
+    end
+
+    %% Local development path
+    UI_DEV --> API_DEV
+    API_DEV --> VITE
+    VITE --> AUTH
+    VITE --> PROJECTS
+    VITE --> TASKS
+    VITE --> ASSIGNMENTS
+    VITE --> COMMENTS
+
+    %% Docker Compose / Render path
+    UI --> API
+    API --> NGINX
+    NGINX --> AUTH
+    NGINX --> PROJECTS
+    NGINX --> TASKS
+    NGINX --> ASSIGNMENTS
+    NGINX --> COMMENTS
+
+    AUTH --> CSRF
+    AUTH --> SESSION
+    AUTH --> USERS
+
+    PROJECTS --> JPA
+    TASKS --> JPA
+    ASSIGNMENTS --> JPA
+    COMMENTS --> JPA
+    USERS --> JPA
+
+    JPA --> DB
+    FLYWAY --> DB
+
+    classDef frontend fill:#d4edda,stroke:#28a745
+    classDef proxy fill:#fff3cd,stroke:#ffc107
+    classDef backend fill:#cce5ff,stroke:#007bff
+    classDef persistence fill:#e2e3e5,stroke:#383d41
+    classDef database fill:#f8d7da,stroke:#dc3545
+
+    class LocalDev,UI_DEV,API_DEV,VITE frontend
+    class Frontend,UI,API frontend
+    class Proxy,NGINX proxy
+    class Backend,Security,Domains,AUTH,CSRF,SESSION,USERS,PROJECTS,TASKS,ASSIGNMENTS,COMMENTS backend
+    class Persistence,JPA,FLYWAY persistence
+    class Database,DB database
+```
+
+The diagram shows two request paths. In local development, the React frontend communicates with the Spring Boot backend via Vite's development proxy (`vite.config.ts`), bypassing Nginx. In Docker Compose and the prepared Render setup, Nginx serves the compiled React application and proxies all `/api/` requests to the backend. The backend's modular monolith contains a security module handling session-based authentication with CSRF protection, and domain modules for each business area. Spring Data JPA/Hibernate handles runtime data access to PostgreSQL, while Flyway manages schema migrations at application startup.
+
 The client brief confirms only the need to organise projects, manage tasks and follow work progress. Detailed workflows and access rules remain project implementation decisions documented in requirements and user stories; they are not additional client-confirmed requirements.
 
 ## Implemented technology foundation

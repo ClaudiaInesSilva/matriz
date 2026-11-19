@@ -179,7 +179,11 @@ Required environment variables:
 - `MATRIZ_E2E_PROJECT_ID`
 - Optionally `MATRIZ_E2E_TASK_TITLE_PREFIX`
 
-The Playwright configuration supports the local Vite URL `http://127.0.0.1:5173` only.
+The Playwright configuration supports the local Vite URL http://127.0.0.1:5173 only.
+
+Playwright E2E tests are also executed by the GitHub Actions CI workflow (`.github/workflows/ci.yml`). The CI environment sets the following variable so the Vite development server proxies to the backend:
+
+VITE_API_PROXY_TARGET=http://localhost:8080
 
 Passwords must not be hardcoded.
 

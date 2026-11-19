@@ -43,13 +43,14 @@ The commands below are run from the `backend` directory. Each result is labeled 
 mvn "-Dtest=PostgresAssignmentCommentPersistenceTest" test
 ```
 
-**Previously reported result:** 3 tests run, 0 failures, 0 errors, 0 skipped; `BUILD SUCCESS`. This was a prior run with test credentials configured; it was not repeated during the current correction because those credentials are unavailable here.
+**Previously reported result:** 4 tests run, 0 failures, 0 errors, 0 skipped; `BUILD SUCCESS`. This was a prior run with test credentials configured; it was not repeated during the current correction because those credentials are unavailable here.
 
 The class is `backend/src/test/java/com/matriz/persistence/PostgresAssignmentCommentPersistenceTest.java`. It contains:
 
 - `persistsAssignmentsAcrossSeparateHttpRequests`
 - `persistsCommentAcrossSeparateHttpRequests`
 - `persistsTaskAcrossSeparateHttpRequests`
+- `rejectsTaskCreationForMissingProjectWithoutPersistingTask`
 
 The tests use the real Spring application and PostgreSQL database `matriz_test`, with unique test records, and verify persisted results through separate HTTP requests. The task test checks ID, title, description, status, priority and project association from the GET response, and verifies the persisted creator ID against the authenticated user. The task API response does not itself expose `creatorId`.
 
@@ -59,7 +60,7 @@ The tests use the real Spring application and PostgreSQL database `matriz_test`,
 mvn test
 ```
 
-**Current result:** 80 tests run, 0 failures, 0 errors, 3 skipped; `BUILD SUCCESS`. The three skipped tests are the opt-in PostgreSQL persistence tests because `MATRIZ_TEST_DB_USERNAME` and `MATRIZ_TEST_DB_PASSWORD` were not configured for this run.
+**Current result:** 106 tests run, 0 failures, 0 errors, 4 skipped; `BUILD SUCCESS`. The four skipped tests are the opt-in PostgreSQL persistence tests because `MATRIZ_TEST_DB_USERNAME` and `MATRIZ_TEST_DB_PASSWORD` were not configured for this run.
 
 ### Project API validation tests
 
@@ -81,7 +82,7 @@ Representative automated coverage:
 | Assignments and comments | `backend/src/test/java/com/matriz/assignments/AssignmentControllerTest.java`; `backend/src/test/java/com/matriz/comments/CommentControllerTest.java` | API validation, authorization requirements, response fields, duplicate handling, author derivation, timestamps, and missing-resource responses. Most repository interactions are mocked. |
 | Database safeguards | `backend/src/test/java/com/matriz/users/LocalDatabaseUrlGuardTest.java`; `backend/src/test/java/com/matriz/persistence/PostgresAssignmentCommentPersistenceTest.java` | Datasource URL safety checks and the fixed integration-test database target. |
 
-Surefire reports are available under `backend/target/surefire-reports/`. Current reports confirm the 80-test full-suite result with three skipped integration tests and the 12-test project controller result. The earlier successful PostgreSQL integration-test run is recorded above; it was not repeated for this correction because the required test credentials were unavailable. No database was accessed during the current verification.
+Surefire reports are available under `backend/target/surefire-reports/`. Current reports confirm the 106-test full-suite result with four skipped integration tests and the 12-test project controller result. The earlier successful PostgreSQL integration-test run is recorded above; it was not repeated for this correction because the required test credentials were unavailable. No database was accessed during the current verification.
 
 The revised `openapi.yaml` parsed successfully with the locally available SnakeYAML parser. Structural checks confirmed that `/dashboard` is absent, `Task` does not declare `assignees`, and the reusable `401` response has no body.
 
@@ -99,7 +100,7 @@ These examples describe AI assistance and developer decisions; they do not repla
 
 - Manual checks were confirmed by the user, but no screenshots or detailed browser logs were retained.
 - Direct API authorization results were reported, but raw PowerShell requests/responses were not retained.
-- The frontend has no automated test suite or test runner at this stage; frontend behavior was checked manually.
+- The frontend includes Playwright end-to-end tests covering authentication, project navigation, task creation, and task deletion. These tests run locally via `npm run test:e2e` and are also executed in the GitHub Actions CI pipeline. Frontend unit and component test infrastructure is not implemented.
 - PostgreSQL integration tests establish persistence across separate HTTP requests, not across a backend restart. Restart persistence was checked manually in Scenario 03.
 - Only two demo users were available for assignment checks; eligibility with a third user was not tested.
 - Cleanup of `API Authorization Probe` is unconfirmed because no successful delete response or independent absence check was supplied. Do not treat cleanup as verified.
@@ -108,4 +109,4 @@ These examples describe AI assistance and developer decisions; they do not repla
 
 ## Overall conclusion
 
-The current full backend suite passed with 80 tests, 0 failures, 0 errors and 3 skipped opt-in PostgreSQL tests; the project controller tests passed with all 12 tests. A previous targeted PostgreSQL run was reported as passing, but was not repeated because credentials were unavailable in the current environment. User-reported manual checks cover all nine scenarios, including application flows, persistence through a backend restart, user-facing validation and direct API authorization. Evidence quality is limited by the absence of screenshots and detailed request logs; frontend behavior has no automated tests, third-user assignment eligibility was not checked, and temporary-task cleanup remains unconfirmed.
+The current full backend suite passed with 106 tests, 0 failures, 0 errors and 4 skipped opt-in PostgreSQL tests; the project controller tests passed with all 12 tests. A previous targeted PostgreSQL run was reported as passing, but was not repeated because credentials were unavailable in the current environment. User-reported manual checks cover all nine scenarios, including application flows, persistence through a backend restart, user-facing validation and direct API authorization. Evidence quality is limited by the absence of screenshots and detailed request logs; frontend behavior is covered by Playwright E2E tests rather than unit or component tests, third-user assignment eligibility was not checked, and temporary-task cleanup remains unconfirmed.

@@ -128,6 +128,12 @@ The backend datasource variables are `DB_URL`, `DB_USERNAME` and `DB_PASSWORD`.
 `MATRIZ_SESSION_COOKIE_SECURE` defaults to `true` outside the `local` profile;
 the local profile disables the Secure cookie attribute for local HTTP.
 
+The backend also includes a `render` Spring profile (`application-render.properties`)
+for Render deployment preparation. This profile enables demo-account auto-login
+and sets the session cookie `Secure` attribute. Render deployment has not yet
+been completed; the profile and supporting Nginx configuration are prepared but
+not deployed. See `docs/deployment-plan.md` for details.
+
 ### 2. Demo-account provisioning
 
 The database migrations seed `demo.alex` and `demo.sam`, but do not give them
@@ -436,6 +442,6 @@ The full backend suite can be run from `backend` using `mvn test`. Without the t
 
 ## Limitations and project decisions
 
-The frontend implements authentication, dashboard, project, task, assignment and comment workflows. Detailed behaviors in requirements and user stories are project implementation decisions, not additional client-confirmed requirements. Account lifecycle, deployment and non-functional targets remain unresolved; session and CSRF defaults are configured as described above. Frontend behavior has no automated test suite at this stage.
+The frontend implements authentication, dashboard, project, task, assignment and comment workflows. Detailed behaviors in requirements and user stories are project implementation decisions, not additional client-confirmed requirements. Account lifecycle, deployment and non-functional targets remain unresolved; session and CSRF defaults are configured as described above. The frontend includes Playwright end-to-end tests covering authentication and core workflows, which also run in the GitHub Actions CI pipeline.
 
 See `docs/requirements.md`, `docs/user-stories.md` and the other files in `docs/` for scope, assumptions and open questions.

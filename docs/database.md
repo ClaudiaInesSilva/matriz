@@ -1,4 +1,4 @@
-# Matriz — Proposed MVP Data Model
+# Matriz — Data Model
 
 ## 1. Summary and Scope
 
