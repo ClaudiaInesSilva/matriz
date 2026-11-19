@@ -129,10 +129,11 @@ The backend datasource variables are `DB_URL`, `DB_USERNAME` and `DB_PASSWORD`.
 the local profile disables the Secure cookie attribute for local HTTP.
 
 The backend also includes a `render` Spring profile (`application-render.properties`)
-for Render deployment preparation. This profile enables demo-account auto-login
-and sets the session cookie `Secure` attribute. Render deployment has not yet
-been completed; the profile and supporting Nginx configuration are prepared but
-not deployed. See `docs/deployment-plan.md` for details.
+for Render deployment. This profile enables demo-account auto-login and sets
+the session cookie `Secure` attribute. Both frontend and backend services were
+deployed to Render, but the frontend Nginx reverse proxy cannot reach the
+backend successfully. A Render Static Site alternative is planned but has not
+yet been attempted. See `docs/deployment-plan.md` for details.
 
 ### 2. Demo-account provisioning
 
@@ -443,5 +444,7 @@ The full backend suite can be run from `backend` using `mvn test`. Without the t
 ## Limitations and project decisions
 
 The frontend implements authentication, dashboard, project, task, assignment and comment workflows. Detailed behaviors in requirements and user stories are project implementation decisions, not additional client-confirmed requirements. Account lifecycle, deployment and non-functional targets remain unresolved; session and CSRF defaults are configured as described above. The frontend includes Playwright end-to-end tests covering authentication and core workflows, which also run in the GitHub Actions CI pipeline.
+
+Regarding deployment, both frontend and backend services were deployed to Render, but the frontend Nginx reverse proxy cannot reach the backend. Direct backend requests succeed; proxied requests fail with HTTP 401 and no corresponding backend log entry. Investigation included Nginx `BACKEND_HOST` configuration changes and a Spring Security `DispatcherType.ERROR` permission adjustment, neither of which resolved the issue. Cloudflare CDN loop detection is suspected but unconfirmed. A Render Static Site alternative for the frontend, with browser-to-backend API communication, is planned but has not yet been attempted. Render free-plan constraints prevent pursuing private networking.
 
 See `docs/requirements.md`, `docs/user-stories.md` and the other files in `docs/` for scope, assumptions and open questions.

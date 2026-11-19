@@ -6,7 +6,7 @@
 
 Matriz is a project and task management application for work teams. The original client brief confirms the need to organise projects, manage tasks and follow work progress. Detailed behaviors documented in the application are project implementation decisions, not additional client-confirmed requirements.
 
-This release candidate provides a fully functional local deployment via Docker Compose, a complete CI pipeline via GitHub Actions, and prepared (but not yet executed) Render deployment configuration.
+This release candidate provides a fully functional local deployment via Docker Compose, a complete CI pipeline via GitHub Actions, and Render deployment configuration that was attempted but is not yet functional due to a frontend Nginx reverse proxy issue.
 
 ## Capabilities
 
@@ -43,13 +43,13 @@ Database migrations seed `demo.alex` and `demo.sam` without usable passwords. An
 
 ## Testing
 
-- **Backend:** 106 unit and integration tests (JUnit 5, Spring MockMvc); the latest full Maven run reported 102 executed and 4 skipped. The 4 PostgreSQL persistence integration tests verify real database persistence across separate HTTP requests and passed in a separate run with dedicated test database credentials configured.
+- **Backend:** 106 unit and integration tests (JUnit 5, Spring MockMvc); the latest full Maven run reported 106 tests, 0 failures, 0 errors, 4 skipped (102 executed). The 4 PostgreSQL persistence integration tests verify real database persistence across separate HTTP requests and passed in a separate run with dedicated test database credentials configured.
 - **Frontend:** Playwright E2E tests covering authentication, project navigation, task creation, and task deletion. These run locally and in the CI pipeline.
 - **CI:** GitHub Actions runs backend tests with an ephemeral PostgreSQL database, frontend lint and build checks, Playwright E2E tests, and Docker image builds.
 
 ## Known Limitations
 
-- **Render deployment:** Deployment artifacts (Spring profile, Nginx template, demo-login endpoint) are prepared but Render deployment has not yet been executed.
+- **Render deployment:** Both services were deployed to Render, but the frontend Nginx reverse proxy cannot reach the backend. A Render Static Site alternative is planned but has not yet been attempted.
 - **Frontend tests:** Only Playwright E2E tests exist; frontend unit and component test infrastructure is not implemented.
 - **Account lifecycle:** Public registration, password recovery, and account management beyond demo accounts are not implemented.
 - **Production infrastructure:** Monitoring, backup, recovery, and production hosting are not configured.
@@ -66,6 +66,6 @@ Database migrations seed `demo.alex` and `demo.sam` without usable passwords. An
 ## Important Notes
 
 - This is a release candidate (`0.1.0-rc.1`), not a stable production release.
-- Render deployment is prepared but not yet completed.
+- Render deployment was attempted but is not functional: the frontend Nginx reverse proxy cannot reach the backend.
 - Detailed application behaviors are project implementation decisions, not client-confirmed requirements.
 - See `docs/requirements.md`, `docs/user-stories.md`, `docs/constraints.md`, and `docs/deployment-plan.md` for full scope, assumptions, and deployment details.

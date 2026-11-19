@@ -172,7 +172,7 @@ The following details remain open and must stay visible during planning. They do
 
 **Objective:** Verify that the integrated implementation meets the documented project baseline and records any remaining limitations.
 
-**Status:** The current full backend suite passed with 80 tests, 0 failures, 0 errors and 3 opt-in PostgreSQL tests skipped because credentials were unavailable. The project controller tests passed with 12 tests; frontend lint and production build passed. The OpenAPI document parsed successfully. Manual scenario evidence is user-reported. A prior PostgreSQL integration run was reported as passing, but the tests must be rerun with the dedicated test database credentials for current execution evidence.
+**Status:** The current full backend suite passed with 106 tests, 0 failures, 0 errors, 4 skipped (102 executed). Docker Compose validation was successful: all services started, the application was accessible at localhost:8081, and manual feature checks passed. The latest GitHub Actions CI workflow completed successfully. The OpenAPI document parsed successfully. Frontend Docker image built successfully.
 
 **Main tasks:**
 

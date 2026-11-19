@@ -26,14 +26,14 @@ All notable changes to the Matriz application are documented here.
 
 ### Testing
 
-- 106 backend unit and integration tests (JUnit 5, Spring MockMvc, AssertJ, Mockito); the latest full Maven run reported 102 executed and 4 skipped.
+- 106 backend unit and integration tests (JUnit 5, Spring MockMvc, AssertJ, Mockito); the latest full Maven run reported 106 tests, 0 failures, 0 errors, 4 skipped (102 executed).
 - 4 PostgreSQL persistence integration tests verifying task, assignment, and comment persistence across separate HTTP requests; these passed in a separate run with dedicated test database credentials configured.
 - Playwright E2E tests covering authentication, project navigation, task creation, and task deletion.
 - Frontend lint (Oxlint) and production build verification.
 
 ### Known Limitations
 
-- Render deployment is prepared but has not yet been executed.
+- Render deployment was attempted but is not functional: the frontend Nginx reverse proxy cannot reach the backend. A Render Static Site alternative is planned but has not yet been attempted.
 - Frontend unit and component test infrastructure is not implemented; only Playwright E2E tests exist.
 - Account lifecycle beyond demo accounts (registration, password recovery) is not implemented.
 - Production hosting, monitoring, backup, and recovery strategy are not configured.

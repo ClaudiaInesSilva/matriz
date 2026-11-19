@@ -136,32 +136,52 @@ Runs `npm ci`, `npm run lint`, and `npm run build`. Then executes Playwright E2E
 
 After backend tests and frontend checks pass, builds the backend and frontend Docker images tagged `0.1.0`.
 
-## 7. Render Deployment Preparation
+## 7. Render Deployment Status
 
-Render deployment is prepared but has not yet been completed. The following artifacts support Render deployment:
+Both frontend and backend services were deployed to Render. However, the frontend Nginx reverse proxy cannot reach the backend successfully. The deployment is not functional.
+
+### Deployment artifacts
+
+The following artifacts support Render deployment:
 
 - **Backend:** `backend/src/main/resources/application-render.properties` activates the `render` Spring profile, enabling demo-account auto-login (`matriz.demo-accounts.auto-login-enabled=true`) and setting `server.servlet.session.cookie.secure=true`.
 - **Frontend:** `frontend/nginx.conf.template` supports environment-variable-based backend URL configuration via `${BACKEND_URL}`, allowing the Nginx proxy to reach the Render backend service.
 - **Demo login endpoint:** `POST /api/auth/demo-login` is available only when the `render` profile is active and `matriz.demo-accounts.auto-login-enabled=true`. It accepts `demo.alex` or `demo.sam` usernames without a password.
 
-### Nginx Host header configuration
+### Observed failure
 
-The Nginx template sends `Host ${BACKEND_HOST}` to the backend upstream. The `BACKEND_HOST` variable holds only the backend hostname without scheme or port. This is needed because Nginx's `$proxy_host` variable may include the default HTTPS port `:443` for HTTPS upstreams, and sending a `Host` header with `:443` has been observed to cause Cloudflare to drop the request without responding. Using `BACKEND_HOST` explicitly controls the upstream `Host` header to avoid this issue.
+After deploying both services, the frontend Nginx reverse proxy failed to forward API requests to the backend:
+
+- A direct `GET /api/auth/csrf` request to the backend URL returns HTTP 200 with a valid CSRF token.
+- The equivalent request through the frontend proxy returns HTTP 401.
+- The backend logs show no corresponding request for the failing proxied request, indicating the request never reaches the backend application.
+
+### Investigation performed
+
+The following troubleshooting steps were attempted without resolving the issue:
+
+1. **Nginx Host header adjustment:** The Nginx template sends `Host ${BACKEND_HOST}` to the backend upstream. The `BACKEND_HOST` variable holds only the backend hostname without scheme or port. The possibility that an upstream `Host` header containing `:443` could cause issues was an initial theory that motivated this adjustment. Subsequent direct requests using Nginx-style headers returned HTTP 200, and the `BACKEND_HOST` change did not resolve the proxied failure.
+
+2. **DispatcherType.ERROR permission adjustment:** Spring Security configuration was modified to allow unauthenticated access via the ERROR dispatcher. This adjustment was attempted but did not resolve the Render proxy issue.
+
+3. **Cloudflare CDN loop detection hypothesis:** Investigation suggests Cloudflare CDN loop detection may be responsible, as the request appears to pass through Cloudflare twice. This remains a hypothesis and has not been confirmed as the root cause.
 
 ### Render environment variables
 
-The following environment variables must be configured on the Render frontend service:
+The following environment variables are configured on the Render frontend service:
 
 | Variable | Value |
 |---|---|
 | `BACKEND_URL` | `https://matriz-backend-yx6z.onrender.com` |
 | `BACKEND_HOST` | `matriz-backend-yx6z.onrender.com` |
 
-Render deployment requires creating the Render services, configuring environment variables, and provisioning the demo accounts in the Render database. These steps have not been performed.
+### Planned alternative: Render Static Site
 
-### Post-deployment verification
+A final deployment attempt using a Render Static Site for the React frontend is planned but has not yet been attempted. This approach would serve the compiled React application as a static site, with browser-to-backend API communication bypassing the Nginx reverse proxy entirely. Render free-plan constraints prevent pursuing private networking as an alternative.
 
-After deploying the DispatcherType.ERROR fix to Render, verify the following:
+### Pending verification
+
+When the deployment issue is resolved, verify the following:
 
 1. Navigate to the frontend URL.
 2. Open browser DevTools → Network tab.
@@ -197,4 +217,4 @@ The following remain unresolved:
 - Whether Maven should be pinned with a Maven Wrapper or remain Maven-installation dependent.
 - The final release date and release authority.
 - Production hosting, monitoring, backup, and recovery strategy.
-- Render deployment has been prepared but not yet executed.
+- Render deployment was attempted but is not functional: the frontend Nginx reverse proxy cannot reach the backend. A Render Static Site alternative is planned but has not yet been attempted.
