@@ -10,7 +10,11 @@ RUN npm run build
 
 FROM nginx:1.28-alpine AS runtime
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
+
+ENV PORT=80
+ENV BACKEND_URL=http://backend:8080
+ENV NGINX_ENVSUBST_FILTER=^(PORT|BACKEND_URL)$
 
 EXPOSE 80
