@@ -70,4 +70,90 @@ class MatrizUserDetailsServiceTest {
         assertThrows(UsernameNotFoundException.class, () -> service.loadUserByUsername("disabled.hash"));
         assertThrows(UsernameNotFoundException.class, () -> service.loadUserByUsername("malformed.hash"));
     }
+
+    @Test
+    void demoAlexWithDisabledHashSucceeds() {
+        MockEnvironment environment = new MockEnvironment();
+        environment.setActiveProfiles("render");
+        when(users.findByUsername("demo.alex")).thenReturn(Optional.of(
+                new User(UUID.randomUUID(), "demo.alex", "!DISABLED!", "Alex Demo")));
+        MatrizUserDetailsService service = new MatrizUserDetailsService(users, environment, true);
+
+        MatrizUserPrincipal principal = service.loadDemoUserByUsername("demo.alex");
+
+        assertThat(principal.getUsername()).isEqualTo("demo.alex");
+        assertThat(principal.getPassword()).isEqualTo("!DISABLED!");
+    }
+
+    @Test
+    void demoSamWithDisabledHashSucceeds() {
+        MockEnvironment environment = new MockEnvironment();
+        environment.setActiveProfiles("render");
+        when(users.findByUsername("demo.sam")).thenReturn(Optional.of(
+                new User(UUID.randomUUID(), "demo.sam", "!DISABLED!", "Sam Demo")));
+        MatrizUserDetailsService service = new MatrizUserDetailsService(users, environment, true);
+
+        MatrizUserPrincipal principal = service.loadDemoUserByUsername("demo.sam");
+
+        assertThat(principal.getUsername()).isEqualTo("demo.sam");
+        assertThat(principal.getPassword()).isEqualTo("!DISABLED!");
+    }
+
+    @Test
+    void nonReservedUsernameRejected() {
+        MockEnvironment environment = new MockEnvironment();
+        environment.setActiveProfiles("render");
+        MatrizUserDetailsService service = new MatrizUserDetailsService(users, environment, true);
+
+        assertThrows(UsernameNotFoundException.class, () -> service.loadDemoUserByUsername("some.user"));
+    }
+
+    @Test
+    void disabledFlagRejectsDemo() {
+        MockEnvironment environment = new MockEnvironment();
+        environment.setActiveProfiles("render");
+        MatrizUserDetailsService service = new MatrizUserDetailsService(users, environment, false);
+
+        assertThrows(UsernameNotFoundException.class, () -> service.loadDemoUserByUsername("demo.alex"));
+    }
+
+    @Test
+    void disallowedProfileRejectsDemo() {
+        MockEnvironment environment = new MockEnvironment();
+        environment.setActiveProfiles("production");
+        MatrizUserDetailsService service = new MatrizUserDetailsService(users, environment, true);
+
+        assertThrows(UsernameNotFoundException.class, () -> service.loadDemoUserByUsername("demo.alex"));
+    }
+
+    @Test
+    void missingUserRejected() {
+        MockEnvironment environment = new MockEnvironment();
+        environment.setActiveProfiles("render");
+        when(users.findByUsername("demo.alex")).thenReturn(Optional.empty());
+        MatrizUserDetailsService service = new MatrizUserDetailsService(users, environment, true);
+
+        assertThrows(UsernameNotFoundException.class, () -> service.loadDemoUserByUsername("demo.alex"));
+    }
+
+    @Test
+    void normalLoadStillRejectsDisabledHash() {
+        MockEnvironment environment = new MockEnvironment();
+        when(users.findByUsername("employee.one")).thenReturn(Optional.of(
+                new User(UUID.randomUUID(), "employee.one", "!DISABLED!", "Employee One")));
+        MatrizUserDetailsService service = new MatrizUserDetailsService(users, environment, false);
+
+        assertThrows(UsernameNotFoundException.class, () -> service.loadUserByUsername("employee.one"));
+    }
+
+    @Test
+    void demoAlexNormalLoadRejected() {
+        MockEnvironment environment = new MockEnvironment();
+        environment.setActiveProfiles("render");
+        when(users.findByUsername("demo.alex")).thenReturn(Optional.of(
+                new User(UUID.randomUUID(), "demo.alex", "!DISABLED!", "Alex Demo")));
+        MatrizUserDetailsService service = new MatrizUserDetailsService(users, environment, true);
+
+        assertThrows(UsernameNotFoundException.class, () -> service.loadUserByUsername("demo.alex"));
+    }
 }

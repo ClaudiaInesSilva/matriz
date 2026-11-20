@@ -29,7 +29,7 @@ public class AuthenticationService {
             throw new IllegalArgumentException("Invalid demo username");
         }
 
-        MatrizUserPrincipal principal = (MatrizUserPrincipal) matrizUserDetailsService.loadUserByUsername(username);
+        MatrizUserPrincipal principal = matrizUserDetailsService.loadDemoUserByUsername(username);
         return UsernamePasswordAuthenticationToken.authenticated(principal, null, principal.getAuthorities());
     }
 

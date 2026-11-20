@@ -42,6 +42,19 @@ public class MatrizUserDetailsService implements UserDetailsService {
                 user.getId(), user.getUsername(), user.getPasswordHash(), user.getDisplayName());
     }
 
+    public MatrizUserPrincipal loadDemoUserByUsername(String username) throws UsernameNotFoundException {
+        if (!DemoAccountPolicy.isReservedUsername(username)) {
+            throw unavailableAccount();
+        }
+        if (!demoAuthenticationEnabled || !environment.acceptsProfiles(Profiles.of("local", "compose", "render"))) {
+            throw unavailableAccount();
+        }
+        var user = userRepository.findByUsername(username).orElseThrow(this::unavailableAccount);
+        // Skip BCrypt hash check: demo login is passwordless.
+        return new MatrizUserPrincipal(
+                user.getId(), user.getUsername(), user.getPasswordHash(), user.getDisplayName());
+    }
+
     private UsernameNotFoundException unavailableAccount() {
         return new UsernameNotFoundException("Invalid username or password");
     }

@@ -207,6 +207,23 @@ class AuthenticationControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void demoAccountWithDisabledHashCannotLoginNormally() throws Exception {
+        UUID demoAlexId = UUID.fromString("60000000-0000-4000-8000-000000000001");
+        when(userRepository.findByUsername("demo.alex"))
+                .thenReturn(Optional.of(new User(demoAlexId, "demo.alex", "!DISABLED!", "Alex Demo")));
+
+        CsrfSession csrf = getCsrf();
+        mockMvc.perform(post(LOGIN_URL)
+                        .session(csrf.session())
+                        .header("X-CSRF-TOKEN", csrf.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"demo.alex","password":"any-password"}
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
     private void assertLoginAndProfile(String username, String password, UUID userId, String displayName) throws Exception {
         CsrfSession csrf = getCsrf();
         mockMvc.perform(post(LOGIN_URL)

@@ -71,7 +71,7 @@ class DemoLoginControllerTest {
     void setUpUsers() {
         alexId = UUID.fromString("60000000-0000-4000-8000-000000000001");
         when(userRepository.findByUsername("demo.alex"))
-                .thenReturn(Optional.of(new User(alexId, "demo.alex", passwordEncoder.encode("demo-password"), "Alex")));
+                .thenReturn(Optional.of(new User(alexId, "demo.alex", "!DISABLED!", "Alex")));
     }
 
     @Test
@@ -96,7 +96,7 @@ class DemoLoginControllerTest {
     void demoSamLoginSucceedsWithPropertyAndProfileEnabled() throws Exception {
         UUID samId = UUID.fromString("60000000-0000-4000-8000-000000000002");
         when(userRepository.findByUsername("demo.sam"))
-                .thenReturn(Optional.of(new User(samId, "demo.sam", passwordEncoder.encode("demo-password"), "Sam")));
+                .thenReturn(Optional.of(new User(samId, "demo.sam", "!DISABLED!", "Sam")));
 
         CsrfSession initial = getCsrf();
 
@@ -161,7 +161,7 @@ class DemoLoginControllerTest {
         @BeforeEach
         void setUp() {
             when(userRepository.findByUsername("demo.alex"))
-                    .thenReturn(Optional.of(new User(alexId, "demo.alex", passwordEncoder.encode("demo-password"), "Alex")));
+                    .thenReturn(Optional.of(new User(alexId, "demo.alex", "!DISABLED!", "Alex")));
         }
 
         @Test
@@ -194,7 +194,7 @@ class DemoLoginControllerTest {
         @BeforeEach
         void setUp() {
             when(userRepository.findByUsername("demo.alex"))
-                    .thenReturn(Optional.of(new User(alexId, "demo.alex", passwordEncoder.encode("demo-password"), "Alex")));
+                    .thenReturn(Optional.of(new User(alexId, "demo.alex", "!DISABLED!", "Alex")));
         }
 
         @Test
